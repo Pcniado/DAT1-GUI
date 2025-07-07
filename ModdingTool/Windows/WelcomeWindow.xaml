@@ -21,7 +21,7 @@
             <ColumnDefinition Width="3.5*"/>
         </Grid.ColumnDefinitions>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="0" Margin="32,0,0,0" Width="288" Grid.ColumnSpan="2">
-            <TextBlock Text="DAT1 GUI" FontSize="36" FontWeight="Bold" Margin="0,0,0,8" Foreground="White" FontFamily="Comic Sans MS"/>
+            <TextBlock Text="DAT1 GUI" FontSize="36" FontWeight="Bold" Margin="0,0,0,8" Foreground="White" FontFamily="Bahnschrift"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
                 <Button x:Name="NewProjectButton" Content="New Project" Width="140" Height="36" Margin="0,0,8,0" Click="NewProjectButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
                 <Button x:Name="LoadProjectButton" Content="Load Project" Width="140" Height="36" Margin="0,0,0,0" Click="LoadProjectButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
@@ -30,44 +30,6 @@
                 <Button x:Name="BrowseAssetsButton" Content="Browse Assets" Width="140" Height="36" Margin="0,0,8,0" Click="BrowseAssetsButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
                 <Button x:Name="LoadTocButton" Content="Load TOC" Width="140" Height="36" Margin="0,0,0,0" Click="LoadTocButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
             </StackPanel>
-            <TextBlock Text="Recent Projects" FontSize="16" FontWeight="Bold" Margin="0,16,0,8" Foreground="White"/>
-            <ListBox x:Name="RecentProjectsList" Width="288" Height="120" SelectionChanged="RecentProjectsList_SelectionChanged" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Auto">
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Button Content="{Binding}" Height="32" Margin="0,2,0,2" Foreground="White" Background="#40FFFFFF" BorderBrush="Transparent" BorderThickness="0" Cursor="Hand">
-                            <Button.Style>
-                                <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                    <Setter Property="Template">
-                                        <Setter.Value>
-                                            <ControlTemplate TargetType="Button">
-                                                <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
-                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                                                </Border>
-                                            </ControlTemplate>
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Setter Property="Foreground" Value="White"/>
-                                    <Setter Property="FontWeight" Value="SemiBold"/>
-                                    <Setter Property="Effect">
-                                        <Setter.Value>
-                                            <DropShadowEffect BlurRadius="6" ShadowDepth="0" Color="#80000000"/>
-                                        </Setter.Value>
-                                    </Setter>
-                                    <Setter Property="BorderBrush" Value="Transparent"/>
-                                    <Setter Property="BorderThickness" Value="0"/>
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="#80FFFFFF"/>
-                                            <Setter Property="BorderBrush" Value="#FFFFFFFF"/>
-                                            <Setter Property="Foreground" Value="#222"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                        </Button>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
         </StackPanel>
         <TextBlock x:Name="HoursWastedText" Text="Hours wasted: 0.0" FontSize="13" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16,0,0,8" Foreground="White" Grid.Row="1" Grid.Column="0"/>
         <Button x:Name="GitHubButton" Width="48" Height="48" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="GitHubButton_Click"

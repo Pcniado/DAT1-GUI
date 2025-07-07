@@ -12,7 +12,6 @@ namespace ModdingTool.Windows
 {
     public partial class WelcomeWindow : MetroWindow
     {
-        private List<string> _recentProjects = new();
         private DispatcherTimer _timer;
         private double _hoursWasted = 0;
         private System.DateTime _startTime;
@@ -21,28 +20,12 @@ namespace ModdingTool.Windows
         public WelcomeWindow()
         {
             InitializeComponent();
-            LoadRecentProjects();
             LoadHoursWasted();
             _startTime = System.DateTime.Now;
             _timer = new DispatcherTimer();
             _timer.Interval = System.TimeSpan.FromSeconds(1);
             _timer.Tick += Timer_Tick;
             _timer.Start();
-        }
-
-        private void LoadRecentProjects()
-        {
-            _recentProjects.Clear();
-            var fn = "recent.txt";
-            if (File.Exists(fn))
-            {
-                foreach (var line in File.ReadLines(fn))
-                {
-                    if (string.IsNullOrWhiteSpace(line)) continue;
-                    _recentProjects.Add(line.Trim());
-                }
-            }
-            RecentProjectsList.ItemsSource = _recentProjects;
         }
 
         private void LoadHoursWasted()
@@ -78,7 +61,7 @@ namespace ModdingTool.Windows
             var (folder, modName, author) = ProjectHelper.CreateNewProject(this);
             if (!string.IsNullOrEmpty(folder) && !string.IsNullOrEmpty(modName) && !string.IsNullOrEmpty(author))
             {
-                var mainWindow = new ModdingTool.MainWindow(folder, modName, author);
+                var mainWindow = new ModdingTool.MainWindow(folder, modName, author, true);
                 mainWindow.Show();
                 this.Close();
             }
@@ -90,14 +73,6 @@ namespace ModdingTool.Windows
             if (!string.IsNullOrEmpty(folder))
             {
                 OpenProjectFromFolder(folder);
-            }
-        }
-
-        private void RecentProjectsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
-        {
-            if (RecentProjectsList.SelectedItem is string path)
-            {
-                OpenProjectFromFolder(path);
             }
         }
 
@@ -141,14 +116,26 @@ namespace ModdingTool.Windows
             dialog.Filter = "TOC file (toc)|toc|All files (*.*)|*.*";
             if (dialog.ShowDialog() == true)
             {
-                var mainWindow = new ModdingTool.MainWindow();
-                mainWindow.Show();
-                mainWindow.Dispatcher.InvokeAsync(() => {
-                    var mi = mainWindow.GetType().GetMethod("StartLoadTOCThread", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (mi != null)
-                        mi.Invoke(mainWindow, new object[] { dialog.FileName });
-                });
-                this.Close();
+                try
+                {
+                    var mainWindow = new ModdingTool.MainWindow();
+                    mainWindow.Show();
+                    // Call StartLoadTOCThread directly
+                    var method = mainWindow.GetType().GetMethod("StartLoadTOCThread", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                    if (method != null)
+                    {
+                        method.Invoke(mainWindow, new object[] { dialog.FileName });
+                    }
+                    else
+                    {
+                        System.Windows.MessageBox.Show("Failed to find TOC loading method.", "Error");
+                    }
+                    this.Close();
+                }
+                catch (System.Exception ex)
+                {
+                    System.Windows.MessageBox.Show($"Failed to load TOC: {ex.Message}", "Error");
+                }
             }
         }
 

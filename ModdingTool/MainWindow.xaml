@@ -42,6 +42,14 @@
                             <MenuItem x:Name="File_LoadRecent5" Click="File_LoadRecentItem_Click" />
                         </MenuItem>
                     </MenuItem>
+                    <MenuItem Header="Project">
+                        <MenuItem Header="New Project" Click="NewProject_Click"/>
+                        <MenuItem Header="Open Project" Click="OpenProject_Click"/>
+                        <MenuItem Header="Open Recent Project" x:Name="OpenRecentProjectMenu">
+                            <MenuItem Header="(No recent projects)" IsEnabled="False" x:Name="NoRecentProjectsItem"/>
+                        </MenuItem>
+                        <MenuItem Header="Project Settings" Click="ProjectSettings_Click"/>
+                    </MenuItem>
                     <MenuItem Header="Search">
                         <MenuItem x:Name="Search_Search" Header="Search..." Click="Search_Search_Click" />
                         <MenuItem x:Name="Search_JumpTo" Header="Jump to path or ref..." Click="Search_JumpTo_Click" />

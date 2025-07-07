@@ -59,7 +59,6 @@ namespace ModdingTool {
 		private bool _projectDirty = false;
 		private List<string> _recentProjectFolders = new();
 		private const int MaxRecentProjects = 5;
-		private System.Windows.Controls.MenuItem OpenRecentProjectMenu = new System.Windows.Controls.MenuItem { Header = "Open Recent" };
 
 		public MainWindow() {
 			InitializeComponent();
@@ -81,7 +80,7 @@ namespace ModdingTool {
 			}
 		}
 
-		public MainWindow(string projectFolder, string modName, string author)
+		public MainWindow(string projectFolder, string modName, string author, bool isNewProject = false)
 		{
 			InitializeComponent();
 			this.Activated += OnActivated;
@@ -101,11 +100,33 @@ namespace ModdingTool {
 			_currentModName = modName;
 			_currentAuthor = author;
 			_replacedAssets.Clear();
+			var stageJsonPath = System.IO.Path.Combine(projectFolder, "stage.json");
+			if (File.Exists(stageJsonPath))
+			{
+				var json = System.IO.File.ReadAllText(stageJsonPath);
+				var project = System.Text.Json.JsonSerializer.Deserialize<ModdingTool.Structs.ModProject>(json);
+				_gameId = project.GameId;
+				_gamePath = project.GamePath;
+			}
 			SetProjectDirty(false);
 			UpdateWindowTitle();
 			ShowAssetsFromFolder("");
 			AddRecentProject(projectFolder);
-			ShowCustomMessageBox($"Created new project at: {_currentProjectFolder}", "New Project");
+			if (!string.IsNullOrEmpty(_gamePath))
+			{
+				var tocPath = System.IO.Path.Combine(_gamePath, "toc");
+				if (File.Exists(tocPath))
+				{
+					StartLoadTOCThread(tocPath);
+					_lastLoadedTocPath = tocPath;
+				}
+			}
+			if (isNewProject)
+			{
+				this.Loaded += (s, e) => {
+					ShowCustomMessageBox($"Created new project at: {_currentProjectFolder}", "New Project");
+				};
+			}
 		}
 
 		private void OnActivated(object sender, EventArgs e)
@@ -194,17 +215,24 @@ namespace ModdingTool {
 
 			string tocPath = null;
 			string gameFolder = null;
+			string detectedGameId = null;
 
 			// i20: asset_archive/toc
 			string i20Toc = Path.Combine(baseDir, "asset_archive", "toc");
 			if (File.Exists(i20Toc)) {
 				tocPath = i20Toc;
 				gameFolder = baseDir;
+				// Try to detect game by exe
+				if (File.Exists(Path.Combine(baseDir, "MilesMorales.exe"))) detectedGameId = "msmr";
+				else if (File.Exists(Path.Combine(baseDir, "MM.exe"))) detectedGameId = "mm";
 			}
 			// i29+: toc in game folder
 			else if (File.Exists(Path.Combine(baseDir, "toc"))) {
 				tocPath = Path.Combine(baseDir, "toc");
 				gameFolder = baseDir;
+				if (File.Exists(Path.Combine(baseDir, "RiftApart.exe"))) detectedGameId = "rcra";
+				else if (File.Exists(Path.Combine(baseDir, "Spider-Man2.exe"))) detectedGameId = "msm2";
+				else if (File.Exists(Path.Combine(baseDir, "i33.exe"))) detectedGameId = "i33";
 			}
 			// fallback: toc.BAK in game folder
 			else if (File.Exists(Path.Combine(baseDir, "toc.BAK"))) {
@@ -220,8 +248,13 @@ namespace ModdingTool {
 			_recentPaths.Insert(0, baseDir);
 			SaveRecentTxt();
 
-			// Optionally store gameFolder for later use
+			// Store gameFolder and gameId for later use
 			_gamePath = gameFolder;
+			if (!string.IsNullOrEmpty(detectedGameId))
+				_gameId = detectedGameId;
+
+			// Save project if loaded (to persist gameId/gamePath)
+			SaveProjectIfLoaded();
 
 			Thread thread = new(() => LoadTOC(tocPath));
 			_taskThreads.Add(thread);
@@ -1748,6 +1781,38 @@ namespace ModdingTool {
 		private List<int> GetAssetIndices(string key)
 		{
 			return _assetsByPath.ContainsKey(key) ? _assetsByPath[key] : new List<int>();
+		}
+
+		private void NewProject_Click(object sender, RoutedEventArgs e)
+		{
+			var (folder, modName, author) = ModdingTool.Utils.ProjectHelper.CreateNewProject(this);
+			if (!string.IsNullOrEmpty(folder) && !string.IsNullOrEmpty(modName) && !string.IsNullOrEmpty(author))
+			{
+				OpenProjectByPath(folder);
+			}
+		}
+
+		private void OpenProject_Click(object sender, RoutedEventArgs e)
+		{
+			var folder = ModdingTool.Utils.ProjectHelper.LoadProject(this);
+			if (!string.IsNullOrEmpty(folder))
+			{
+				OpenProjectByPath(folder);
+			}
+		}
+
+		private void ProjectSettings_Click(object sender, RoutedEventArgs e)
+		{
+			var prompt = new ModdingTool.Windows.ModInfoPrompt(_currentModName ?? "", _currentAuthor ?? "");
+			prompt.Owner = this;
+			if (prompt.ShowDialog() == true)
+			{
+				_currentModName = prompt.ModName;
+				_currentAuthor = prompt.Author;
+				SaveProjectIfLoaded();
+				UpdateWindowTitle();
+				ShowCustomMessageBox("Project info updated!", "Project Settings");
+			}
 		}
 	}
 }
