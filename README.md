@@ -5,6 +5,8 @@ It is a fork of tkachov’s original *Modding Tool*, enhanced with additional to
 
 ## Features
 
+- Config editor
+
 ## Requirements
 
 - [.NET 7.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
