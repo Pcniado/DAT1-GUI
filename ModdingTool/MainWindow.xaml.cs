@@ -192,38 +192,16 @@ namespace ModdingTool {
 				bool needDownload = false;
 				bool gameDetected = false;
 
-                using (var f = File.OpenRead(path))
-                using (var r = new BinaryReader(f))
-                {
-                    uint magic = r.ReadUInt32();
-                    if (magic == 0x77AF12AF)
-                    { // TOC_I20 (MSMR/MM)
-                        string[] exes = new[] { "MilesMorales.exe", "MM.exe" };
-                        foreach (var exe in exes)
-                        {
-                            if (File.Exists(Path.Combine(tocDir, exe)))
-                            {
-                                exeName = exe;
-                                break;
-                            }
-                        }
-                        if (exeName == "MilesMorales.exe")
-                        {
-                            hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i31.txt";
-                            hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i31.txt");
-                            hashesFileToLoad = hashesTarget;
-                            gameDetected = true;
-                            needDownload = !File.Exists(hashesTarget);
-                        }
-                        else
-                        {
-                            hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i20.txt";
-                            hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i20.txt");
-                            hashesFileToLoad = hashesTarget;
-                            gameDetected = true;
-                            needDownload = !File.Exists(hashesTarget);
-                        }
-                    } else if (magic == 0x34E89035) { // TOC_I29 (RCRA/MSM2/i33)
+				using (var f = File.OpenRead(path))
+				using (var r = new BinaryReader(f)) {
+					uint magic = r.ReadUInt32();
+					if (magic == 0x77AF12AF) { // TOC_I20 (MSMR/MM)
+						hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i20.txt";
+						hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i20.txt");
+						hashesFileToLoad = hashesTarget;
+						gameDetected = true;
+						needDownload = !File.Exists(hashesTarget);
+					} else if (magic == 0x34E89035) { // TOC_I29 (RCRA/MSM2/i33)
 						string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe" };
 						foreach (var exe in exes) {
 							if (File.Exists(Path.Combine(tocDir, exe))) {
@@ -779,14 +757,19 @@ namespace ModdingTool {
 					textureMeta = toc_i29.GetTextureMetaByAssetIndex(index);
 				}
 
-				string extension = Path.GetExtension(asset.Name);
-				if (extension.Equals(".texture", StringComparison.OrdinalIgnoreCase))
-				{
-					string exportFileName = GetTextureExportFileName(asset.Name, asset.Span);
-					path = Path.Combine(Path.GetDirectoryName(path), exportFileName);
-				}
+                // Updated code: strip " (HD)" before checking extension
+                string assetNameForExport = asset.Name;
+                if (assetNameForExport.EndsWith(" (HD)", StringComparison.OrdinalIgnoreCase))
+                    assetNameForExport = assetNameForExport.Substring(
+                        0, assetNameForExport.Length - " (HD)".Length);
+                string extension = Path.GetExtension(assetNameForExport);
+                if (extension.Equals(".texture", StringComparison.OrdinalIgnoreCase))
+                {
+                    string exportFileName = GetTextureExportFileName(assetNameForExport, asset.Span);
+                    path = Path.Combine(Path.GetDirectoryName(path), exportFileName);
+                }
 
-				var packExtras = true;
+                var packExtras = true;
 				var hasExtras = (header != null || textureMeta != null);
 				if (packExtras && hasExtras) {
 					using var ms = new MemoryStream();
