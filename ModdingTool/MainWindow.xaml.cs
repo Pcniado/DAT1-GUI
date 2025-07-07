@@ -192,16 +192,38 @@ namespace ModdingTool {
 				bool needDownload = false;
 				bool gameDetected = false;
 
-				using (var f = File.OpenRead(path))
-				using (var r = new BinaryReader(f)) {
-					uint magic = r.ReadUInt32();
-					if (magic == 0x77AF12AF) { // TOC_I20 (MSMR/MM)
-						hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i20.txt";
-						hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i20.txt");
-						hashesFileToLoad = hashesTarget;
-						gameDetected = true;
-						needDownload = !File.Exists(hashesTarget);
-					} else if (magic == 0x34E89035) { // TOC_I29 (RCRA/MSM2/i33)
+                using (var f = File.OpenRead(path))
+                using (var r = new BinaryReader(f))
+                {
+                    uint magic = r.ReadUInt32();
+                    if (magic == 0x77AF12AF)
+                    { // TOC_I20 (MSMR/MM)
+                        string[] exes = new[] { "MilesMorales.exe", "MM.exe" };
+                        foreach (var exe in exes)
+                        {
+                            if (File.Exists(Path.Combine(tocDir, exe)))
+                            {
+                                exeName = exe;
+                                break;
+                            }
+                        }
+                        if (exeName == "MilesMorales.exe")
+                        {
+                            hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i31.txt";
+                            hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i31.txt");
+                            hashesFileToLoad = hashesTarget;
+                            gameDetected = true;
+                            needDownload = !File.Exists(hashesTarget);
+                        }
+                        else
+                        {
+                            hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i20.txt";
+                            hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i20.txt");
+                            hashesFileToLoad = hashesTarget;
+                            gameDetected = true;
+                            needDownload = !File.Exists(hashesTarget);
+                        }
+                    } else if (magic == 0x34E89035) { // TOC_I29 (RCRA/MSM2/i33)
 						string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe" };
 						foreach (var exe in exes) {
 							if (File.Exists(Path.Combine(tocDir, exe))) {
