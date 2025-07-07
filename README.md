@@ -5,6 +5,7 @@ It is a fork of Tkachov’s original *Modding Tool*, enhanced with additional to
 
 ## Features
 
+- Robust Project System for restoring your work
 - Config Editor
 - Revamped User Interface
 - Automatic downloads of hashes for each of the supported games 
