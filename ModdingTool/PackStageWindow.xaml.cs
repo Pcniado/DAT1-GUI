@@ -23,30 +23,30 @@ namespace ModdingTool {
 		private Dictionary<Asset, string> _mainWindowReplacedAssets;
 		private Dictionary<Asset, string> _mainWindowAddedAssets;
 
-		private string _modName;
-		private string _author;
-		private string _gameId;
+		private string? _modName;
+		private string? _author;
+		private string? _gameId;
 		private List<Game> _games = new();
 		private ObservableCollection<AssetReplace> _assets = new();
 
-		private static string _rememberedModName = null;
-		private static string _rememberedAuthor = null;
-		private static string _rememberedGameId = null;
+		private static string? _rememberedModName = null;
+		private static string? _rememberedAuthor = null;
+		private static string? _rememberedGameId = null;
 
 		class Game {
-			public string Name { get; set; }
-			public string Id;
+			public string? Name { get; set; }
+			public string? Id;
 		}
 
 		class AssetReplace {
-			public Asset Asset;
+			public Asset? Asset;
 			public bool IsNew = false;
 
-			public string OriginalAssetName { get => (IsNew ? $"new ({Asset.RefPath})" : Asset.Name); }
-			public string OriginalAssetNameToolTip { get => (Asset.FullPath == null ? "" : $"Path: {Asset.FullPath}\n") + $"ID: {Asset.Id:X016}\nSpan: {Asset.Span}\nArchive: {Asset.Archive}"; }
+			public string OriginalAssetName { get => (IsNew ? $"new ({Asset?.RefPath})" : Asset?.Name ?? ""); }
+			public string OriginalAssetNameToolTip { get => (Asset?.FullPath == null ? "" : $"Path: {Asset.FullPath}\n") + $"ID: {Asset?.Id:X016}\nSpan: {Asset?.Span}\nArchive: {Asset?.Archive}"; }
 
-			public string ReplacingFileName { get; set; }
-			public string ReplacingFileNameToolTip { get; set; }
+			public string? ReplacingFileName { get; set; }
+			public string? ReplacingFileNameToolTip { get; set; }
 		}
 
 		public PackStageWindow(Dictionary<Asset, string> replacedAssets, Dictionary<Asset, string> addedAssets, TOCBase toc) {

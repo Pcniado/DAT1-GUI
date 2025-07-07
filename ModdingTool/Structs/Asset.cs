@@ -13,9 +13,9 @@ namespace ModdingTool.Structs {
 		public string SizeFormatted { get => SizeFormat.FormatSize(Size); }
 		public bool HasHeader;
 
-		public string Name { get; set; }
-		public string Archive { get; set; }
-		public string FullPath = null;
+		public string? Name { get; set; }
+		public string? Archive { get; set; }
+		public string? FullPath = null;
 		public string RefPath { get => $"{Span}/{Id:X016}"; }
 	}
 }

@@ -16,7 +16,7 @@ public partial class StageSelector: Window {
 	private bool _verified = false;
 
 	public bool OnlyExisting = false;
-	public string Stage = null;
+	public string? Stage = null;
 
 	public StageSelector() {
 		InitializeComponent();

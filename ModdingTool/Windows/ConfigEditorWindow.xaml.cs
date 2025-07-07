@@ -12,12 +12,12 @@ namespace ModdingTool.Windows
 {
     public partial class ConfigEditorWindow : Window
     {
-        private string _currentFilePath;
-        private JObject _currentJson;
-        private string _originalAssetName;
-        private string _originalAssetFullPath;
-        private string _selectedAssetName;
-        private string _pendingConfigFilePath;
+        private string? _currentFilePath;
+        private JObject? _currentJson;
+        private string? _originalAssetName;
+        private string? _originalAssetFullPath;
+        private string? _selectedAssetName;
+        private string? _pendingConfigFilePath;
         private bool _pendingLoadStarted;
 
         public ConfigEditorWindow(string configFilePath = null, string selectedAssetName = null, bool showOpenButton = true, bool showAddToStageButton = false)

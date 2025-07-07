@@ -31,7 +31,7 @@ public partial class ModularCreationWindow: Window {
 	#endregion
 	#region layout tab
 
-	private string _selectedStyle;
+	private string? _selectedStyle;
 	private List<IconsStyle> _styles = new();
 	private List<LayoutEntry> _entries = new();
 	private LayoutEntry _buttonsEntry = new AddingEntriesButtonsEntry();
@@ -52,9 +52,9 @@ public partial class ModularCreationWindow: Window {
 	#endregion
 	#region info tab
 
-	private string _modName;
-	private string _author;
-	private string _gameId;
+	private string? _modName;
+	private string? _author;
+	private string? _gameId;
 	private List<Game> _games = new();
 
 	class Game {

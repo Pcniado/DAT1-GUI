@@ -8,14 +8,14 @@ using System.Collections.Generic;
 
 namespace ModdingTool.Utils {
 	public static class Extensions {
-		public static void Set<K, V>(this Dictionary<K, V> d, K k, V v) {
+		public static void Set<K, V>(this Dictionary<K, V> d, K k, V v) where K : notnull {
 			if (d.ContainsKey(k))
 				d[k] = v;
 			else
 				d.Add(k, v);
 		}
 
-		public static void Update<K, V>(this Dictionary<K, V> d, K k, V v, Func<V, V, V> update) {
+		public static void Update<K, V>(this Dictionary<K, V> d, K k, V v, Func<V, V, V> update) where K : notnull {
 			if (d.ContainsKey(k))
 				d[k] = update(d[k], v);
 			else

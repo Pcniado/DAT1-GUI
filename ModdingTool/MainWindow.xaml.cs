@@ -26,7 +26,7 @@ using System.Threading.Tasks;
 namespace ModdingTool {
 	public partial class MainWindow: Window {
 		// tick
-		private Thread _tickThread;
+		private Thread? _tickThread;
 		private List<Thread> _taskThreads = new();
 
 		// settings
@@ -43,11 +43,11 @@ namespace ModdingTool {
 		private Dictionary<Asset, string> _addedAssets = new();
 
 		// ui
-		private SearchWindow _searchWindow = null;
-		private HashToolWindow _hashToolWindow = null;
+		private SearchWindow? _searchWindow = null;
+		private HashToolWindow? _hashToolWindow = null;
 
 		// Add this field to track the config editor window
-		private ConfigEditorWindow _configEditorWindow = null;
+		private ConfigEditorWindow? _configEditorWindow = null;
 
 		public MainWindow() {
 			InitializeComponent();
