@@ -21,6 +21,7 @@
         </Grid>
         <DockPanel>
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="8">
+                <TextBlock x:Name="JsonValidityIndicator" Text="Valid" Foreground="Green" VerticalAlignment="Center" Margin="0,0,12,0" Width="60" TextAlignment="Center"/>
                 <Button x:Name="OpenButton" Content="Open..." Width="80" Margin="0,0,8,0" Click="OpenButton_Click" />
                 <Button x:Name="SaveConfigButton" Content="Save as .config" Width="120" Margin="0,0,8,0" Click="SaveConfigButton_Click" />
                 <Button x:Name="SaveJsonButton" Content="Save as JSON" Width="120" Margin="0,0,8,0" Click="SaveJsonButton_Click" />

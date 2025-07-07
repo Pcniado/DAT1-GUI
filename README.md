@@ -5,9 +5,10 @@ It is a fork of tkachov’s original *Modding Tool*, enhanced with additional to
 
 ## Features
 
-- Config editor
+- Config Editor
 - Revamped User Interface
 - Automatic downloads of hashes for each of the supported games 
+- Various Quality of Life Features
 
 ## Requirements
 

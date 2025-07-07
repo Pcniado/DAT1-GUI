@@ -33,6 +33,8 @@ namespace ModdingTool.Windows
             this.Loaded += ConfigEditorWindow_Loaded;
             this.Activated += OnActivated;
             this.Deactivated += OnDeactivated;
+            this.JsonEditor.TextChanged += JsonEditor_TextChanged;
+            UpdateJsonValidityIndicator();
         }
 
         private void ShowOverlay(bool show)
@@ -89,14 +91,40 @@ namespace ModdingTool.Windows
             }
         }
 
+        private void JsonEditor_TextChanged(object sender, EventArgs e)
+        {
+            UpdateJsonValidityIndicator();
+        }
+
+        private void UpdateJsonValidityIndicator()
+        {
+            Dispatcher.Invoke(() => {
+                try
+                {
+                    var text = JsonEditor.Text;
+                    Newtonsoft.Json.Linq.JToken.Parse(text);
+                    JsonValidityIndicator.Text = "Valid";
+                    JsonValidityIndicator.Foreground = System.Windows.Media.Brushes.Green;
+                }
+                catch
+                {
+                    JsonValidityIndicator.Text = "Invalid";
+                    JsonValidityIndicator.Foreground = System.Windows.Media.Brushes.Red;
+                }
+            });
+        }
+
         public async Task SaveConfigFileAsync(string path)
         {
             await Dispatcher.InvokeAsync(() => ShowOverlay(true));
+            string tempFile = Path.GetTempFileName();
+            string jsonText = string.Empty;
+            await Dispatcher.InvokeAsync(() => { jsonText = JsonEditor.Text; });
             try
             {
                 await Task.Run(() =>
                 {
-                    var json = JObject.Parse(JsonEditor.Text);
+                    var json = JObject.Parse(jsonText);
                     var configType = (string)json["TYPE"]["Type"];
                     var hasRefs = json.ContainsKey("REFS");
                     var config = Config.Make(configType, hasRefs);
@@ -108,8 +136,27 @@ namespace ModdingTool.Windows
                             config.AddReference((string)refPath);
                         }
                     }
-                    File.WriteAllBytes(path, config.Save());
+                    try
+                    {
+                        File.WriteAllBytes(tempFile, config.Save());
+                    }
+                    catch (Exception fileEx)
+                    {
+                        throw new IOException($"Failed to write temp file: {fileEx.Message}");
+                    }
                 });
+               
+                try
+                {
+                    if (File.Exists(path))
+                        File.Replace(tempFile, path, null, true);
+                    else
+                        File.Move(tempFile, path);
+                }
+                catch (Exception moveEx)
+                {
+                    throw new IOException($"Failed to move temp file to destination: {moveEx.Message}");
+                }
                 await Dispatcher.InvokeAsync(() =>
                 {
                     StatusText.Text = $"Saved: {System.IO.Path.GetFileName(path)}";
@@ -124,6 +171,7 @@ namespace ModdingTool.Windows
             }
             finally
             {
+                try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
                 await Dispatcher.InvokeAsync(() => ShowOverlay(false));
             }
         }
@@ -158,19 +206,17 @@ namespace ModdingTool.Windows
             dlg.FileName = Path.GetFileNameWithoutExtension(configAssetName) + ".stage";
             if (dlg.ShowDialog() == true)
             {
+                
                 await Dispatcher.InvokeAsync(() => ShowOverlay(true));
                 try
                 {
-                    // Save config to a temp file first
                     var tempConfigPath = Path.Combine(Path.GetTempPath(), $"Overstrike_Stage_{Guid.NewGuid()}.config");
                     await SaveConfigFileAsync(tempConfigPath);
                     await Task.Run(() =>
                     {
-                        // Create .stage zip
                         using (var fs = new FileStream(dlg.FileName, FileMode.Create, FileAccess.Write, FileShare.None))
                         using (var zip = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
                         {
-                            // Add config file (use asset name, e.g. 0/1234567890ABCDEF.config or original path if available)
                             var assetPath = configAssetName;
                             var entry = zip.CreateEntry(assetPath);
                             using (var entryStream = entry.Open())
@@ -178,7 +224,6 @@ namespace ModdingTool.Windows
                             {
                                 fileStream.CopyTo(entryStream);
                             }
-                            // Add info.json
                             var info = new JObject
                             {
                                 ["game"] = "unknown",
@@ -230,9 +275,32 @@ namespace ModdingTool.Windows
             if (dlg.ShowDialog() == true)
             {
                 await Dispatcher.InvokeAsync(() => ShowOverlay(true));
+                string tempFile = Path.GetTempFileName();
+                string jsonText = string.Empty;
+                await Dispatcher.InvokeAsync(() => { jsonText = JsonEditor.Text; });
                 try
                 {
-                    await Task.Run(() => File.WriteAllText(dlg.FileName, JsonEditor.Text));
+                   
+                    Newtonsoft.Json.Linq.JToken.Parse(jsonText);
+                    try
+                    {
+                        await Task.Run(() => File.WriteAllText(tempFile, jsonText));
+                    }
+                    catch (Exception fileEx)
+                    {
+                        throw new IOException($"Failed to write temp file: {fileEx.Message}");
+                    }
+                    try
+                    {
+                        if (File.Exists(dlg.FileName))
+                            File.Replace(tempFile, dlg.FileName, null, true);
+                        else
+                            File.Move(tempFile, dlg.FileName);
+                    }
+                    catch (Exception moveEx)
+                    {
+                        throw new IOException($"Failed to move temp file to destination: {moveEx.Message}");
+                    }
                     await Dispatcher.InvokeAsync(() =>
                     {
                         StatusText.Text = $"Saved JSON: {System.IO.Path.GetFileName(dlg.FileName)}";
@@ -247,6 +315,7 @@ namespace ModdingTool.Windows
                 }
                 finally
                 {
+                    try { if (File.Exists(tempFile)) File.Delete(tempFile); } catch { }
                     await Dispatcher.InvokeAsync(() => ShowOverlay(false));
                 }
             }
