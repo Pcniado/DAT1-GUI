@@ -50,6 +50,17 @@ namespace ModdingTool {
 
 		private ConfigEditorWindow? _configEditorWindow = null;
 
+		private string? _currentProjectFolder = null;
+		private string? _currentModName = null;
+		private string? _currentAuthor = null;
+		private string? _gameId = null;
+		private string? _gamePath = null;
+		private string? _lastLoadedTocPath = null;
+		private bool _projectDirty = false;
+		private List<string> _recentProjectFolders = new();
+		private const int MaxRecentProjects = 5;
+		private System.Windows.Controls.MenuItem OpenRecentProjectMenu = new System.Windows.Controls.MenuItem { Header = "Open Recent" };
+
 		public MainWindow() {
 			InitializeComponent();
 			this.Activated += OnActivated;
@@ -1570,8 +1581,6 @@ namespace ModdingTool {
 		}
 
 		#endregion
-<<<<<<< Updated upstream
-=======
 
 		public void SaveProject(string folderPath, string modName, string author, Dictionary<Asset, string> replacedAssets)
 		{
@@ -1606,7 +1615,7 @@ namespace ModdingTool {
 			var replacedAssets = new Dictionary<Asset, string>();
 			foreach (var entry in project.Replacements) {
 				replacedAssets.Add(new Asset {
-					Span = entry.Span,
+					Span = (byte)entry.Span,
 					Id = entry.Id,
 					Name = entry.Name,
 					FullPath = entry.FullPath
@@ -1645,7 +1654,7 @@ namespace ModdingTool {
 			var msgBox = new ModdingTool.Windows.CustomMessageBox(message, title, showCancel);
 			msgBox.Owner = this;
 			msgBox.ShowDialog();
-			return msgBox.Result;
+			return msgBox.Result == true;
 		}
 
 		private void AddRecentProject(string folderPath)
@@ -1702,7 +1711,7 @@ namespace ModdingTool {
 					var msgBox = new ModdingTool.Windows.CustomMessageBox($"Game folder not found: {gamePath}\nPlease locate the game folder.", "Game Not Found", true);
 					msgBox.Owner = this;
 					msgBox.ShowDialog();
-					if (!msgBox.Result) return;
+					if (msgBox.Result != true) return;
 					var dialog = new Microsoft.WindowsAPICodePack.Dialogs.CommonOpenFileDialog();
 					dialog.IsFolderPicker = true;
 					dialog.Title = "Select game folder";
@@ -1740,6 +1749,5 @@ namespace ModdingTool {
 		{
 			return _assetsByPath.ContainsKey(key) ? _assetsByPath[key] : new List<int>();
 		}
->>>>>>> Stashed changes
 	}
 }

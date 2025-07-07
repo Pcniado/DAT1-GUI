@@ -21,7 +21,7 @@ namespace ModdingTool.Utils
                 var msgBox = new CustomMessageBox("A project (stage.json) already exists in this folder. Overwrite?", "Overwrite Project?", true);
                 if (owner is System.Windows.Window w) msgBox.Owner = w;
                 msgBox.ShowDialog();
-                if (!msgBox.Result)
+                if (msgBox.Result != true)
                     return (null, null, null);
             }
             var prompt = new ModInfoPrompt("", "");
