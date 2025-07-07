@@ -1,4 +1,4 @@
-# Building Overstrike
+# Building DAT1 GUI
 
 ## Short Version
 
@@ -22,3 +22,15 @@ You can either:
 - **Clone via Git** (recommended if you plan to contribute):
   ```bash
   git clone https://github.com/Pcniado/DAT1-GUI.git
+
+### 2. Set the configuration to `Debug` or `Release` in the toolbar at the top of Visual Studio.
+
+### 3. If NuGet packages haven’t restored automatically:
+
+- Right-click the solution in **Solution Explorer**
+- Select **Restore NuGet Packages**
+
+### 4. Build and run:
+
+- Press **F5** to build and launch the GUI, **or**
+- Use the **Build > Build Solution** menu option to compile without running
