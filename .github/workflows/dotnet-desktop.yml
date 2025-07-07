@@ -30,15 +30,22 @@ jobs:
     - name: Restore NuGet packages
       run: dotnet restore ${{ env.Solution_Name }}
 
-    - name: Build the project
-      run: dotnet build ${{ env.Solution_Name }} --configuration ${{ matrix.configuration }} --no-restore
+    - name: Build the project (suppress warnings in output)
+      run: |
+        dotnet build $env:Solution_Name `
+          --configuration ${{ matrix.configuration }} `
+          --no-restore `
+          -warnasmessage:*
 
-    # Optional: Add test step here if/when you create a test project
+    # Optional: Add test step if you have a test project
     # - name: Run unit tests
-    #   run: dotnet test path\to\your\tests.csproj --configuration ${{ matrix.configuration }} --no-build
+    #   run: dotnet test path\to\tests.csproj --configuration ${{ matrix.configuration }} --no-build
 
     - name: Publish build output
-      run: dotnet publish ${{ env.Build_Project_Path }} --configuration ${{ matrix.configuration }} --output ./publish/${{ matrix.configuration }}
+      run: |
+        dotnet publish $env:Build_Project_Path `
+          --configuration ${{ matrix.configuration }} `
+          --output ./publish/${{ matrix.configuration }}
 
     - name: Upload published app
       uses: actions/upload-artifact@v4
