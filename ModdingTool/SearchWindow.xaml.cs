@@ -46,6 +46,7 @@ public partial class SearchWindow: Window {
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetsCommand, ContextMenu_ReplaceAssets));
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
+		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
 
 		SearchTextBox.Text = "";
 		Search();
@@ -132,6 +133,11 @@ public partial class SearchWindow: Window {
 	private void SearchResults_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
 		var selected = SearchResults.SelectedItems.Count;
 		AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
+		// Show EditConfig only for a single .config file
+		if (selected == 1 && SearchResults.SelectedItem is SearchResult result && (result.Path?.EndsWith(".config", System.StringComparison.OrdinalIgnoreCase) ?? false))
+			AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
+		else
+			AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
 	}
 
 	private void ContextMenu_ExtractAsset(object sender, ExecutedRoutedEventArgs e) {
@@ -156,6 +162,10 @@ public partial class SearchWindow: Window {
 
 	private void ContextMenu_CopyRef(object sender, ExecutedRoutedEventArgs e) {
 		_contextMenuCallback("CopyRef", GetSelectedAssets());
+	}
+
+	private void ContextMenu_EditConfig(object sender, ExecutedRoutedEventArgs e) {
+		_contextMenuCallback("EditConfig", GetSelectedAssets());
 	}
 
 	private List<Asset> GetSelectedAssets() {

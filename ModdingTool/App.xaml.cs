@@ -18,6 +18,7 @@ namespace ModdingTool {
 		public static readonly RoutedUICommand ReplaceAssetsCommand = new("Replace Assets", "ReplaceAssetsCommand", typeof(AssetsListContextMenu));
 		public static readonly RoutedUICommand CopyPathCommand = new("Copy Path", "CopyPathCommand", typeof(AssetsListContextMenu));
 		public static readonly RoutedUICommand CopyRefCommand = new("Copy Ref", "CopyRefCommand", typeof(AssetsListContextMenu));
+		public static readonly RoutedUICommand EditConfigCommand = new("Edit Config", "EditConfigCommand", typeof(AssetsListContextMenu));
 
 		public static MenuItem SelectedItemsCount => GetMenuItem("AssetsListContextMenu", "SelectedItemsCount");
 		public static MenuItem ExtractAsset => GetMenuItem("AssetsListContextMenu", "ExtractAsset");
@@ -26,6 +27,7 @@ namespace ModdingTool {
 		public static MenuItem ReplaceAssets => GetMenuItem("AssetsListContextMenu", "ReplaceAssets");
 		public static MenuItem CopyPath => GetMenuItem("AssetsListContextMenu", "CopyPath");
 		public static MenuItem CopyRef => GetMenuItem("AssetsListContextMenu", "CopyRef");
+		public static MenuItem EditConfig => GetMenuItem("AssetsListContextMenu", "EditConfig");
 
 		public static void HandleContextMenuOpening(object sender, ContextMenuEventArgs e, int selectedCount) {
 			if (selectedCount == 0) {

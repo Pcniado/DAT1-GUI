@@ -14,6 +14,7 @@
 			<Separator/>
 			<MenuItem Name="CopyPath" Header="Copy path" Command="{x:Static local:AssetsListContextMenu.CopyPathCommand}" />
 			<MenuItem Name="CopyRef" Header="Copy ref" Command="{x:Static local:AssetsListContextMenu.CopyRefCommand}" />
+			<MenuItem Name="EditConfig" Header="Edit Config..." Command="{x:Static local:AssetsListContextMenu.EditConfigCommand}" />
 		</ContextMenu>
 	</Application.Resources>
 </Application>

@@ -21,6 +21,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Threading.Tasks;
 
 namespace ModdingTool {
 	public partial class MainWindow: Window {
@@ -45,6 +46,9 @@ namespace ModdingTool {
 		private SearchWindow _searchWindow = null;
 		private HashToolWindow _hashToolWindow = null;
 
+		// Add this field to track the config editor window
+		private ConfigEditorWindow _configEditorWindow = null;
+
 		public MainWindow() {
 			InitializeComponent();
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset));
@@ -53,6 +57,7 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetsCommand, ContextMenu_ReplaceAssets));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
 
 			StartTickThread();
 			LoadSettings();
@@ -710,7 +715,7 @@ namespace ModdingTool {
 			}
 		}
 
-		private void ExtractFolderToStage(string folder, string stage) {
+	private void ExtractFolderToStage(string folder, string stage) {
 			var cwd = Directory.GetCurrentDirectory();
 			var path = Path.Combine(cwd, "stages");
 			var stagePath = Path.Combine(path, stage);
@@ -979,13 +984,10 @@ namespace ModdingTool {
 			}
 		}
 
-		private void Help_JoinDiscord_Click(object sender, RoutedEventArgs e) {
-			try {
-				Process.Start(new ProcessStartInfo() {
-					FileName = "https://discord.gg/insomniacversemodding",
-					UseShellExecute = true
-				});
-			} catch {}
+		private void Tools_ConfigEditor_Click(object sender, RoutedEventArgs e)
+		{
+			var win = new ModdingTool.Windows.ConfigEditorWindow(null, null, true, false);
+			win.Show();
 		}
 
 		#endregion
@@ -1082,6 +1084,11 @@ namespace ModdingTool {
 		private void AssetsList_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
 			var selected = AssetsList.SelectedItems.Count;
 			AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
+			// Show EditConfig only for a single .config file
+			if (selected == 1 && AssetsList.SelectedItem is Asset asset && (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false))
+				AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
+			else
+				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
 		}
 
 		// command handlers
@@ -1110,6 +1117,10 @@ namespace ModdingTool {
 			AssetsListContextMenuClicked("CopyRef", AssetsList.SelectedItems);
 		}
 
+		private void ContextMenu_EditConfig(object sender, ExecutedRoutedEventArgs e) {
+			AssetsListContextMenuClicked("EditConfig", AssetsList.SelectedItems);
+		}
+
 		// common handler (also used by SearchWindow)
 
 		private void AssetsListContextMenuClicked(string item, System.Collections.IList selectedAssets) {
@@ -1120,6 +1131,7 @@ namespace ModdingTool {
 				case "ReplaceAssets": ReplaceAssets(selectedAssets); break;
 				case "CopyPath": CopyPath(selectedAssets); break;
 				case "CopyRef": CopyRef(selectedAssets); break;
+				case "EditConfig": EditConfig(selectedAssets); break;
 			}
 		}
 
@@ -1200,11 +1212,91 @@ namespace ModdingTool {
 			SetClipboard(refs);
 		}
 
+		private async void EditConfig(System.Collections.IList assets)
+		{
+			if (assets.Count != 1) return;
+			var asset = assets[0] as Asset;
+			if (asset == null || !(asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false)) return;
+			var path = asset.FullPath;
+			if (string.IsNullOrEmpty(path) || !File.Exists(path))
+			{
+				// Try to reconstruct the path from the folder and asset name
+				string folder = null;
+				foreach (var kvp in _assetsByPath)
+				{
+					if (kvp.Value.Contains(_assets.IndexOf(asset)))
+					{
+						folder = kvp.Key;
+						break;
+					}
+				}
+				if (!string.IsNullOrEmpty(folder))
+				{
+					path = System.IO.Path.Combine(folder, asset.Name);
+				}
+			}
+			if (string.IsNullOrEmpty(path) || !File.Exists(path))
+			{
+				// Extract the asset to a temp file asynchronously
+				var tempDir = System.IO.Path.GetTempPath();
+				var tempFile = System.IO.Path.Combine(tempDir, asset.Name);
+				bool extracted = false;
+				await Task.Run(() => {
+					try
+					{
+						var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						System.IO.File.WriteAllBytes(tempFile, bytes);
+						extracted = true;
+					}
+					catch (Exception)
+					{
+						extracted = false;
+					}
+				});
+				if (!extracted)
+				{
+					var winErr = new ModdingTool.Windows.ConfigEditorWindow(null, asset.Name, false, true);
+					winErr.Dispatcher.Invoke(() => winErr.SetStatusText("Failed to extract config."));
+					winErr.Show();
+					return;
+				}
+				path = tempFile;
+			}
+			// Close previous config editor if open
+			if (_configEditorWindow != null)
+			{
+				try { _configEditorWindow.Close(); } catch { }
+				_configEditorWindow = null;
+			}
+			var win = new ModdingTool.Windows.ConfigEditorWindow(path, asset.Name, false, true);
+			_configEditorWindow = win;
+			win.Closed += (s, e) => { if (_configEditorWindow == win) _configEditorWindow = null; };
+			win.AddToModButton.Click += (s, e) =>
+			{
+				var tempConfigPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), asset.Name);
+				win.SaveConfigFile(tempConfigPath);
+				// Update main window data on main window's dispatcher
+				this.Dispatcher.Invoke(() => {
+					_replacedAssets[asset] = tempConfigPath;
+				});
+				// Update config editor UI on its own dispatcher
+				win.Dispatcher.Invoke(() => {
+					win.SetStatusText("Asset added to .stage");
+				});
+			};
+			win.Show();
+		}
+
 		#endregion
 
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e) {
 			CloseSearchWindow();
 			CloseHashToolWindow();
+			if (_configEditorWindow != null)
+			{
+				try { _configEditorWindow.Close(); } catch { }
+				_configEditorWindow = null;
+			}
 		}
 
 		#endregion
