@@ -7,7 +7,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="Jump to..." Height="80" Width="600" MinHeight="80" MaxHeight="80" MinWidth="600"
-        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
 	<Grid>
@@ -31,7 +31,7 @@
 				</TextBlock.Style>
 			</TextBlock>
 
-			<Button x:Name="JumpButton" Content="Jump" Grid.Column="1" HorizontalAlignment="Right" Margin="0" VerticalAlignment="Top" Width="70" Height="22" Click="JumpButton_Click" />
+			<Button x:Name="JumpButton" Content="Jump" Grid.Column="1" HorizontalAlignment="Right" Margin="4,0,0,0" VerticalAlignment="Top" Width="60" MinWidth="60" Height="22" Click="JumpButton_Click" />
 		</Grid>
 	</Grid>
 </Controls:MetroWindow>

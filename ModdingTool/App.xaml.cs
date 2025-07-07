@@ -1,4 +1,4 @@
-﻿// Overstrike -- an open-source mod manager for PC ports of Insomniac Games' games.
+﻿//
 // This program is free software, and can be redistributed and/or modified by you. It is provided 'as-is', without any warranty.
 // For more details, terms and conditions, see GNU General Public License.
 // A copy of the that license should come with this program (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
@@ -19,6 +19,8 @@ namespace ModdingTool {
 		public static readonly RoutedUICommand CopyPathCommand = new("Copy Path", "CopyPathCommand", typeof(AssetsListContextMenu));
 		public static readonly RoutedUICommand CopyRefCommand = new("Copy Ref", "CopyRefCommand", typeof(AssetsListContextMenu));
 		public static readonly RoutedUICommand EditConfigCommand = new("Edit Config", "EditConfigCommand", typeof(AssetsListContextMenu));
+		//public static readonly RoutedUICommand ViewTextureCommand = new("View Texture", "ViewTextureCommand", typeof(AssetsListContextMenu));
+		//public static readonly RoutedUICommand ExtractAsPNGCommand = new("Extract as PNG", "ExtractAsPNGCommand", typeof(AssetsListContextMenu));
 
 		public static MenuItem SelectedItemsCount => GetMenuItem("AssetsListContextMenu", "SelectedItemsCount");
 		public static MenuItem ExtractAsset => GetMenuItem("AssetsListContextMenu", "ExtractAsset");
@@ -28,6 +30,7 @@ namespace ModdingTool {
 		public static MenuItem CopyPath => GetMenuItem("AssetsListContextMenu", "CopyPath");
 		public static MenuItem CopyRef => GetMenuItem("AssetsListContextMenu", "CopyRef");
 		public static MenuItem EditConfig => GetMenuItem("AssetsListContextMenu", "EditConfig");
+	//	public static MenuItem ExtractAsPNG => GetMenuItem("AssetsListContextMenu", "ExtractAsPNG");
 
 		public static void HandleContextMenuOpening(object sender, ContextMenuEventArgs e, int selectedCount) {
 			if (selectedCount == 0) {
@@ -36,13 +39,18 @@ namespace ModdingTool {
 			}
 
 			var suffix = (selectedCount == 1 ? "" : "s");
-			SelectedItemsCount.Header = $"{selectedCount} asset{suffix} selected";
+			if (SelectedItemsCount != null)
+				SelectedItemsCount.Header = $"{selectedCount} asset{suffix} selected";
 
-			ReplaceAsset.Visibility = (selectedCount == 1 ? Visibility.Visible : Visibility.Collapsed);
-			ReplaceAssets.Visibility = (selectedCount > 1 ? Visibility.Visible : Visibility.Collapsed);
+			if (ReplaceAsset != null)
+				ReplaceAsset.Visibility = (selectedCount == 1 ? Visibility.Visible : Visibility.Collapsed);
+			if (ReplaceAssets != null)
+				ReplaceAssets.Visibility = (selectedCount > 1 ? Visibility.Visible : Visibility.Collapsed);
 
-			CopyPath.Header = "Copy path" + (selectedCount > 1 ? "s" : "");
-			CopyRef.Header = "Copy ref" + (selectedCount > 1 ? "s" : "");
+			if (CopyPath != null)
+				CopyPath.Header = "Copy path" + (selectedCount > 1 ? "s" : "");
+			if (CopyRef != null)
+				CopyRef.Header = "Copy ref" + (selectedCount > 1 ? "s" : "");
 		}
 
 		private static MenuItem? GetMenuItem(string menuName, string menuItemName) {

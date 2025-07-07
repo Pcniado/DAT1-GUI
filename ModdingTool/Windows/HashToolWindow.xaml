@@ -6,7 +6,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="Hash Tool" Height="112" Width="500" MinHeight="112" MinWidth="500" ResizeMode="NoResize"
-        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
 	<Border BorderThickness="0,1,0,0" BorderBrush="#EEE">

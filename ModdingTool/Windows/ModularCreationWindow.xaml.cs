@@ -1,4 +1,4 @@
-﻿// Overstrike -- an open-source mod manager for PC ports of Insomniac Games' games.
+﻿//
 // This program is free software, and can be redistributed and/or modified by you. It is provided 'as-is', without any warranty.
 // For more details, terms and conditions, see GNU General Public License.
 // A copy of the that license should come with this program (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
@@ -15,11 +15,11 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
-using MahApps.Metro.Controls;
+using System.Windows.Media;
 
 namespace ModdingTool.Windows;
 
-public partial class ModularCreationWindow: MetroWindow {
+public partial class ModularCreationWindow : MahApps.Metro.Controls.MetroWindow {
 	#region state
 
 	private bool _initializing = true;
@@ -32,7 +32,7 @@ public partial class ModularCreationWindow: MetroWindow {
 	#endregion
 	#region layout tab
 
-	private string? _selectedStyle;
+	private string _selectedStyle;
 	private List<IconsStyle> _styles = new();
 	private List<LayoutEntry> _entries = new();
 	private LayoutEntry _buttonsEntry = new AddingEntriesButtonsEntry();
@@ -53,9 +53,9 @@ public partial class ModularCreationWindow: MetroWindow {
 	#endregion
 	#region info tab
 
-	private string? _modName;
-	private string? _author;
-	private string? _gameId;
+	private string _modName;
+	private string _author;
+	private string _gameId;
 	private List<Game> _games = new();
 
 	class Game {
@@ -78,6 +78,9 @@ public partial class ModularCreationWindow: MetroWindow {
 
 		UpdateEntriesList();
 		MakeOptionPathSelector();
+
+		this.Activated += OnActivated;
+		this.Deactivated += OnDeactivated;
 	}
 
 	public string ModName => (_modName == null || _modName.Trim() == "" ? "Untitled" : _modName);
@@ -867,6 +870,16 @@ public partial class ModularCreationWindow: MetroWindow {
 	}
 
 	#endregion
+
+	private void OnActivated(object sender, EventArgs e)
+	{
+        this.WindowTitleBrush = (System.Windows.Media.LinearGradientBrush)FindResource("AppTitleBarGradient");
+    }
+
+	private void OnDeactivated(object sender, EventArgs e)
+	{
+        this.WindowTitleBrush = (System.Windows.Media.LinearGradientBrush)FindResource("AppTitleBarGradient");
+    }
 
 	#endregion
 }

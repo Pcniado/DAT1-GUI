@@ -1,8 +1,9 @@
-﻿// Overstrike -- an open-source mod manager for PC ports of Insomniac Games' games.
+﻿//
 // This program is free software, and can be redistributed and/or modified by you. It is provided 'as-is', without any warranty.
 // For more details, terms and conditions, see GNU General Public License.
 // A copy of the that license should come with this program (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
 
+using System;
 using DAT1;
 using Microsoft.WindowsAPICodePack.Dialogs;
 using ModdingTool.Structs;
@@ -52,6 +53,8 @@ namespace ModdingTool {
 
 		public PackStageWindow(Dictionary<Asset, string> replacedAssets, Dictionary<Asset, string> addedAssets, TOCBase toc) {
 			InitializeComponent();
+			this.Activated += OnActivated;
+			this.Deactivated += OnDeactivated;
 			
 			MakeGamesSelector(toc);
 			_initializing = false;
@@ -239,6 +242,16 @@ namespace ModdingTool {
 			}
 
 			Close();
+		}
+
+		private void OnActivated(object sender, EventArgs e)
+		{
+			this.WindowTitleBrush = (System.Windows.Media.LinearGradientBrush)FindResource("AppTitleBarGradient");
+		}
+
+		private void OnDeactivated(object sender, EventArgs e)
+		{
+			this.WindowTitleBrush = (System.Windows.Media.LinearGradientBrush)FindResource("AppTitleBarGradient");
 		}
 
 		#endregion

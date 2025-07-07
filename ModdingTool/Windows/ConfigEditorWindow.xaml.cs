@@ -31,6 +31,8 @@ namespace ModdingTool.Windows
             _pendingConfigFilePath = configFilePath;
             _pendingLoadStarted = false;
             this.Loaded += ConfigEditorWindow_Loaded;
+            this.Activated += OnActivated;
+            this.Deactivated += OnDeactivated;
         }
 
         private void ShowOverlay(bool show)
@@ -87,28 +89,42 @@ namespace ModdingTool.Windows
             }
         }
 
-        public void SaveConfigFile(string path)
+        public async Task SaveConfigFileAsync(string path)
         {
+            await Dispatcher.InvokeAsync(() => ShowOverlay(true));
             try
             {
-                var json = JObject.Parse(JsonEditor.Text);
-                var configType = (string)json["TYPE"]["Type"];
-                var hasRefs = json.ContainsKey("REFS");
-                var config = Config.Make(configType, hasRefs);
-                config.ContentSection.Data = (JObject)json["DATA"];
-                if (hasRefs)
+                await Task.Run(() =>
                 {
-                    foreach (var refPath in json["REFS"])
+                    var json = JObject.Parse(JsonEditor.Text);
+                    var configType = (string)json["TYPE"]["Type"];
+                    var hasRefs = json.ContainsKey("REFS");
+                    var config = Config.Make(configType, hasRefs);
+                    config.ContentSection.Data = (JObject)json["DATA"];
+                    if (hasRefs)
                     {
-                        config.AddReference((string)refPath);
+                        foreach (var refPath in json["REFS"])
+                        {
+                            config.AddReference((string)refPath);
+                        }
                     }
-                }
-                File.WriteAllBytes(path, config.Save());
-                StatusText.Text = $"Saved: {System.IO.Path.GetFileName(path)}";
+                    File.WriteAllBytes(path, config.Save());
+                });
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText.Text = $"Saved: {System.IO.Path.GetFileName(path)}";
+                });
             }
             catch (Exception ex)
             {
-                StatusText.Text = $"Error saving config: {ex.Message}";
+                await Dispatcher.InvokeAsync(() =>
+                {
+                    StatusText.Text = $"Error saving config: {ex.Message}";
+                });
+            }
+            finally
+            {
+                await Dispatcher.InvokeAsync(() => ShowOverlay(false));
             }
         }
 
@@ -122,7 +138,7 @@ namespace ModdingTool.Windows
             }
         }
 
-        private void SaveConfigButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveConfigButton_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new SaveFileDialog();
             dlg.Filter = "Config files (*.config)|*.config|All files (*.*)|*.*";
@@ -130,11 +146,11 @@ namespace ModdingTool.Windows
             dlg.FileName = defaultName;
             if (dlg.ShowDialog() == true)
             {
-                SaveConfigFile(dlg.FileName);
+                await SaveConfigFileAsync(dlg.FileName);
             }
         }
 
-        private void SaveStageButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveStageButton_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new SaveFileDialog();
             dlg.Filter = "Stage files (*.stage)|*.stage|All files (*.*)|*.*";
@@ -142,44 +158,58 @@ namespace ModdingTool.Windows
             dlg.FileName = Path.GetFileNameWithoutExtension(configAssetName) + ".stage";
             if (dlg.ShowDialog() == true)
             {
+                await Dispatcher.InvokeAsync(() => ShowOverlay(true));
                 try
                 {
                     // Save config to a temp file first
                     var tempConfigPath = Path.Combine(Path.GetTempPath(), $"Overstrike_Stage_{Guid.NewGuid()}.config");
-                    SaveConfigFile(tempConfigPath);
-                    // Create .stage zip
-                    using (var fs = new FileStream(dlg.FileName, FileMode.Create, FileAccess.Write, FileShare.None))
-                    using (var zip = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
+                    await SaveConfigFileAsync(tempConfigPath);
+                    await Task.Run(() =>
                     {
-                        // Add config file (use asset name, e.g. 0/1234567890ABCDEF.config or original path if available)
-                        var assetPath = configAssetName;
-                        var entry = zip.CreateEntry(assetPath);
-                        using (var entryStream = entry.Open())
-                        using (var fileStream = File.OpenRead(tempConfigPath))
+                        // Create .stage zip
+                        using (var fs = new FileStream(dlg.FileName, FileMode.Create, FileAccess.Write, FileShare.None))
+                        using (var zip = new System.IO.Compression.ZipArchive(fs, System.IO.Compression.ZipArchiveMode.Create))
                         {
-                            fileStream.CopyTo(entryStream);
+                            // Add config file (use asset name, e.g. 0/1234567890ABCDEF.config or original path if available)
+                            var assetPath = configAssetName;
+                            var entry = zip.CreateEntry(assetPath);
+                            using (var entryStream = entry.Open())
+                            using (var fileStream = File.OpenRead(tempConfigPath))
+                            {
+                                fileStream.CopyTo(entryStream);
+                            }
+                            // Add info.json
+                            var info = new JObject
+                            {
+                                ["game"] = "unknown",
+                                ["name"] = Path.GetFileNameWithoutExtension(dlg.FileName),
+                                ["author"] = Environment.UserName,
+                                ["format_version"] = 2
+                            };
+                            var infoEntry = zip.CreateEntry("info.json");
+                            using (var infoStream = infoEntry.Open())
+                            using (var writer = new StreamWriter(infoStream))
+                            {
+                                writer.Write(info.ToString());
+                            }
                         }
-                        // Add info.json
-                        var info = new JObject
-                        {
-                            ["game"] = "unknown",
-                            ["name"] = Path.GetFileNameWithoutExtension(dlg.FileName),
-                            ["author"] = Environment.UserName,
-                            ["format_version"] = 2
-                        };
-                        var infoEntry = zip.CreateEntry("info.json");
-                        using (var infoStream = infoEntry.Open())
-                        using (var writer = new StreamWriter(infoStream))
-                        {
-                            writer.Write(info.ToString());
-                        }
-                    }
-                    File.Delete(tempConfigPath);
-                    StatusText.Text = $"Saved stage: {Path.GetFileName(dlg.FileName)}";
+                        File.Delete(tempConfigPath);
+                    });
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusText.Text = $"Saved stage: {Path.GetFileName(dlg.FileName)}";
+                    });
                 }
                 catch (Exception ex)
                 {
-                    StatusText.Text = $"Error saving stage: {ex.Message}";
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusText.Text = $"Error saving stage: {ex.Message}";
+                    });
+                }
+                finally
+                {
+                    await Dispatcher.InvokeAsync(() => ShowOverlay(false));
                 }
             }
         }
@@ -189,7 +219,7 @@ namespace ModdingTool.Windows
             this.Close();
         }
 
-        private void SaveJsonButton_Click(object sender, RoutedEventArgs e)
+        private async void SaveJsonButton_Click(object sender, RoutedEventArgs e)
         {
             var dlg = new SaveFileDialog();
             dlg.Filter = "JSON files (*.json)|*.json|All files (*.*)|*.*";
@@ -199,14 +229,25 @@ namespace ModdingTool.Windows
             dlg.FileName = defaultName;
             if (dlg.ShowDialog() == true)
             {
+                await Dispatcher.InvokeAsync(() => ShowOverlay(true));
                 try
                 {
-                    File.WriteAllText(dlg.FileName, JsonEditor.Text);
-                    StatusText.Text = $"Saved JSON: {System.IO.Path.GetFileName(dlg.FileName)}";
+                    await Task.Run(() => File.WriteAllText(dlg.FileName, JsonEditor.Text));
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusText.Text = $"Saved JSON: {System.IO.Path.GetFileName(dlg.FileName)}";
+                    });
                 }
                 catch (Exception ex)
                 {
-                    StatusText.Text = $"Error saving JSON: {ex.Message}";
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        StatusText.Text = $"Error saving JSON: {ex.Message}";
+                    });
+                }
+                finally
+                {
+                    await Dispatcher.InvokeAsync(() => ShowOverlay(false));
                 }
             }
         }
@@ -217,7 +258,7 @@ namespace ModdingTool.Windows
             try
             {
                 var tempConfigPath = Path.Combine(Path.GetTempPath(), _selectedAssetName ?? _originalAssetName ?? "config.config");
-                await Task.Run(() => SaveConfigFile(tempConfigPath));
+                await Task.Run(() => SaveConfigFileAsync(tempConfigPath));
                 Dispatcher.Invoke(() => {
                     StatusText.Text = "Added to mod session. Use 'Pack as .stage' in the main window.";
                 });
@@ -254,6 +295,16 @@ namespace ModdingTool.Windows
                 _pendingLoadStarted = true;
                 Task.Run(() => LoadConfigFileAsync(_pendingConfigFilePath));
             }
+        }
+
+        private void OnActivated(object sender, EventArgs e)
+        {
+            this.WindowTitleBrush = (System.Windows.Media.LinearGradientBrush)FindResource("AppTitleBarGradient");
+        }
+
+        private void OnDeactivated(object sender, EventArgs e)
+        {
+            this.WindowTitleBrush = (System.Windows.Media.LinearGradientBrush)FindResource("AppTitleBarGradient");
         }
     }
 } 

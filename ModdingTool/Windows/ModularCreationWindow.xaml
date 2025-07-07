@@ -6,8 +6,8 @@
         xmlns:local="clr-namespace:ModdingTool.Windows"
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
-        Title="Create .modular" Height="600" Width="1000" Drop="Window_Drop"
-        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        Title="Create .modular" Height="700" Width="1100"
+        WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
 
@@ -168,11 +168,10 @@
 
 	<Border BorderThickness="0,1,0,0" BorderBrush="#EEE">
 		<Grid>
-			<TabControl x:Name="Tabs" Margin="-1,7,-1,-1" SelectionChanged="Tabs_SelectionChanged">
+			<TabControl x:Name="Tabs" Margin="8,8,8,8" SelectionChanged="Tabs_SelectionChanged">
 				<TabControl.Resources>
 					<Style TargetType="TabPanel">
-						<Setter Property="Margin" Value="50,100,5,10"/>
-						<Setter Property="RenderTransform" Value="1,0,0,1,6,0"/>
+						<Setter Property="Margin" Value="0,0,0,0"/>
 					</Style>
 				</TabControl.Resources>
 				<TabItem Header="Files">

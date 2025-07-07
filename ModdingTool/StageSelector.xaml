@@ -7,7 +7,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="Select stage" Height="106" Width="400" MinHeight="106" MaxHeight="106" MinWidth="400"
-        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
 	<Grid>

@@ -7,7 +7,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="Pack replaced assets as .stage" Height="500" Width="500"
-        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
 	<Border BorderThickness="0,1,0,0" BorderBrush="#EEE">

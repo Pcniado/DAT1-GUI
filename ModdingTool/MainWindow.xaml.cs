@@ -1,4 +1,4 @@
-﻿// Overstrike -- an open-source mod manager for PC ports of Insomniac Games' games.
+﻿//
 // This program is free software, and can be redistributed and/or modified by you. It is provided 'as-is', without any warranty.
 // For more details, terms and conditions, see GNU General Public License.
 // A copy of the that license should come with this program (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
@@ -48,11 +48,12 @@ namespace ModdingTool {
 		private SearchWindow? _searchWindow = null;
 		private HashToolWindow? _hashToolWindow = null;
 
-		// Add this field to track the config editor window
 		private ConfigEditorWindow? _configEditorWindow = null;
 
 		public MainWindow() {
 			InitializeComponent();
+			this.Activated += OnActivated;
+			this.Deactivated += OnDeactivated;
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetToStageCommand, ContextMenu_ExtractAssetToStage));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetCommand, ContextMenu_ReplaceAsset));
@@ -68,6 +69,16 @@ namespace ModdingTool {
 				StartLoadTOCThread(_recentPaths[0]);
 			}
 		}
+
+		private void OnActivated(object sender, EventArgs e)
+		{
+            this.WindowTitleBrush = (System.Windows.Media.Brush)FindResource("AppTitleBarGradient");
+        }
+
+		private void OnDeactivated(object sender, EventArgs e)
+		{
+            this.WindowTitleBrush = (System.Windows.Media.Brush)FindResource("AppTitleBarGradient");
+        }
 
 		#region tick
 
@@ -521,7 +532,24 @@ namespace ModdingTool {
 			}
 
 			foreach (var asset in assetList) {
-				_displayedAssetList.Add(asset);
+				if (Path.GetExtension(asset.Name).Equals(".texture", StringComparison.OrdinalIgnoreCase) && asset.Span == 1)
+				{
+					var hdAsset = new Asset
+					{
+						Span = asset.Span,
+						Id = asset.Id,
+						Size = asset.Size,
+						HasHeader = asset.HasHeader,
+						Name = asset.Name + " (HD)",
+						Archive = asset.Archive,
+						FullPath = asset.FullPath
+					};
+					_displayedAssetList.Add(hdAsset);
+				}
+				else
+				{
+					_displayedAssetList.Add(asset);
+				}
 			}
 
 			AssetsList.ItemsSource = _displayedAssetList;
@@ -703,6 +731,20 @@ namespace ModdingTool {
 			}
 		}
 
+		private string GetTextureExportFileName(string originalFileName, int span)
+		{
+			string extension = Path.GetExtension(originalFileName);
+			string baseName = Path.GetFileNameWithoutExtension(originalFileName);
+			if (span == 1)
+			{
+				return $"{baseName}.hd{extension}";
+			}
+			else
+			{
+				return originalFileName;
+			}
+		}
+
 		private void ExtractAsset(Asset asset, string path) {
 			try {
 				var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
@@ -715,39 +757,39 @@ namespace ModdingTool {
 					textureMeta = toc_i29.GetTextureMetaByAssetIndex(index);
 				}
 
-				var packExtras = true; // TODO: make an option to control this
+				string extension = Path.GetExtension(asset.Name);
+				if (extension.Equals(".texture", StringComparison.OrdinalIgnoreCase))
+				{
+					string exportFileName = GetTextureExportFileName(asset.Name, asset.Span);
+					path = Path.Combine(Path.GetDirectoryName(path), exportFileName);
+				}
+
+				var packExtras = true;
 				var hasExtras = (header != null || textureMeta != null);
 				if (packExtras && hasExtras) {
-					// TODO: make a class in DAT1 for that?
 					using var ms = new MemoryStream();
 					using var w = new BinaryWriter(ms);
-					w.Write(0x00475453); // STG\x00
-
+					w.Write(0x00475453);
 					uint flags = 0;
-					if (header != null) flags |= 0x1; // TODO: constant
-					if (textureMeta != null) flags |= 0x2; // TODO: constant
+					if (header != null) flags |= 0x1;
+					if (textureMeta != null) flags |= 0x2;
 					w.Write(flags);
-
 					w.Write((header == null ? 0 : header.Length));
-					w.Write((textureMeta == null ? 0 : textureMeta.Length)); // TODO: specifically do uint32 writing here
-					
+					w.Write((textureMeta == null ? 0 : textureMeta.Length));
 					if (header != null) {
 						w.Write(header);
 						Align16(w);
 					}
-
 					if (textureMeta != null) {
 						w.Write(textureMeta);
 						Align16(w);
 					}
-
 					w.Write(bytes);
-
 					File.WriteAllBytes(path, ms.ToArray());
 				} else {
 					File.WriteAllBytes(path, bytes);
 				}
-			} catch {} // TODO: notify user of failure somehow
+			} catch {}
 
 			static void Align16(BinaryWriter w) {
 				var pos = w.BaseStream.Position % 16;
@@ -1187,11 +1229,14 @@ namespace ModdingTool {
 		private void AssetsList_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
 			var selected = AssetsList.SelectedItems.Count;
 			AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
-			// Show EditConfig only for a single .config file
-			if (selected == 1 && AssetsList.SelectedItem is Asset asset && (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false))
-				AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
-			else
+			if (selected == 1 && AssetsList.SelectedItem is Asset asset) {
+				if (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false)
+					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
+				else
+					AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+			} else {
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+			}
 		}
 
 		// command handlers
@@ -1323,7 +1368,7 @@ namespace ModdingTool {
 			var path = asset.FullPath;
 			if (string.IsNullOrEmpty(path) || !File.Exists(path))
 			{
-				// Try to reconstruct the path from the folder and asset name
+
 				string folder = null;
 				foreach (var kvp in _assetsByPath)
 				{
@@ -1340,7 +1385,7 @@ namespace ModdingTool {
 			}
 			if (string.IsNullOrEmpty(path) || !File.Exists(path))
 			{
-				// Extract the asset to a temp file asynchronously
+
 				var tempDir = System.IO.Path.GetTempPath();
 				var tempFile = System.IO.Path.Combine(tempDir, asset.Name);
 				bool extracted = false;
@@ -1365,7 +1410,7 @@ namespace ModdingTool {
 				}
 				path = tempFile;
 			}
-			// Close previous config editor if open
+
 			if (_configEditorWindow != null)
 			{
 				try { _configEditorWindow.Close(); } catch { }
@@ -1374,15 +1419,13 @@ namespace ModdingTool {
 			var win = new ModdingTool.Windows.ConfigEditorWindow(path, asset.Name, false, true);
 			_configEditorWindow = win;
 			win.Closed += (s, e) => { if (_configEditorWindow == win) _configEditorWindow = null; };
-			win.AddToModButton.Click += (s, e) =>
+			win.AddToModButton.Click += async (s, e) =>
 			{
 				var tempConfigPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), asset.Name);
-				win.SaveConfigFile(tempConfigPath);
-				// Update main window data on main window's dispatcher
+				await win.SaveConfigFileAsync(tempConfigPath);
 				this.Dispatcher.Invoke(() => {
 					_replacedAssets[asset] = tempConfigPath;
 				});
-				// Update config editor UI on its own dispatcher
 				win.Dispatcher.Invoke(() => {
 					win.SetStatusText("Asset added to .stage");
 				});

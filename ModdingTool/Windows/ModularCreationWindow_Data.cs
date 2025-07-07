@@ -1,4 +1,4 @@
-﻿// Overstrike -- an open-source mod manager for PC ports of Insomniac Games' games.
+﻿//
 // This program is free software, and can be redistributed and/or modified by you. It is provided 'as-is', without any warranty.
 // For more details, terms and conditions, see GNU General Public License.
 // A copy of the that license should come with this program (LICENSE.txt). If not, see <http://www.gnu.org/licenses/>.
@@ -19,13 +19,13 @@ internal class AddingEntriesButtonsEntry: LayoutEntry {
 }
 
 internal class HeaderEntry: LayoutEntry {
-	public string? Text { get; set; }
+	public string Text { get; set; }
 }
 
 internal class SeparatorEntry: LayoutEntry {}
 
 internal class ModuleEntry: LayoutEntry {
-	public string? Name { get; set; }
+	public string Name { get; set; }
 	public List<ModuleOption> Options = new();
 	public CompositeCollection OptionsCollection { get; set; } = new();
 
@@ -50,20 +50,20 @@ internal class ModuleEntry: LayoutEntry {
 }
 
 class ModulePath {
-	public string? Name { get; set; }
-	public string? Path;
+	public string Name { get; set; }
+	public string Path;
 }
 
 class IconPath {
-	public string? Name { get; set; }
-	public string? Path;
-	public BitmapSource? Icon { get; set; }
+	public string Name { get; set; }
+	public string Path;
+	public BitmapSource Icon { get; set; }
 }
 
 class ModuleOption {
 	public string _path = "";
 
-	public string? Name { get; set; }
+	public string Name { get; set; }
 
 	public string File {
 		get {

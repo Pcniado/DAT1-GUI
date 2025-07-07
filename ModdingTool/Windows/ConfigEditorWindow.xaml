@@ -7,7 +7,7 @@
         xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
         Title="Config Editor" Height="600" Width="800" MinHeight="400" MinWidth="600"
-        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
     <Grid>

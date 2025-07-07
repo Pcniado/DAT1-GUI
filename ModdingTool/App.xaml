@@ -14,19 +14,15 @@
 			</ResourceDictionary.MergedDictionaries>
 
 
-			<ImageBrush x:Key="AppBackgroundBrush"
-				ImageSource="pack://application:,,,/background.jpg"
-				Stretch="None"
-				AlignmentX="Center"
-				AlignmentY="Center"/>
+
 
 			<SolidColorBrush x:Key="AppInactiveTitleOverlay" Color="#80000000"/>
 
 			<ContextMenu x:Key="AssetsListContextMenu">
 				<MenuItem Name="SelectedItemsCount" Header="0 selected" IsEnabled="false" />
 				<Separator/>
-				<MenuItem Name="ExtractAsset" Header="Extract selected..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetCommand}" />
-				<MenuItem Name="ExtractAssetToStage" Header="Extract to stage..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetToStageCommand}" />
+                <MenuItem Name="ExtractAsset" Header="Extract selected..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetCommand}" />
+                <MenuItem Name="ExtractAssetToStage" Header="Extract to stage..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetToStageCommand}" />
 				<MenuItem Name="ReplaceAsset" Header="Replace selected..." Command="{x:Static local:AssetsListContextMenu.ReplaceAssetCommand}" />
 				<MenuItem Name="ReplaceAssets" Header="Replace all selected with the same file..." Command="{x:Static local:AssetsListContextMenu.ReplaceAssetsCommand}" />
 				<Separator/>
@@ -34,6 +30,11 @@
 				<MenuItem Name="CopyRef" Header="Copy ref" Command="{x:Static local:AssetsListContextMenu.CopyRefCommand}" />
 				<MenuItem Name="EditConfig" Header="Edit Config..." Command="{x:Static local:AssetsListContextMenu.EditConfigCommand}" />
 			</ContextMenu>
+
+			<LinearGradientBrush x:Key="AppTitleBarGradient" StartPoint="0,0" EndPoint="1,0">
+				<GradientStop Color="#FF5A6497" Offset="0.0"/>
+				<GradientStop Color="#FF1F0D3D" Offset="1.0"/>
+			</LinearGradientBrush>
 		</ResourceDictionary>
 	</Application.Resources>
 </Application>
