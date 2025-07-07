@@ -5,6 +5,8 @@ It is a fork of tkachov’s original *Modding Tool*, enhanced with additional to
 
 ## Features
 
+- Config editor
+
 ## Requirements
 
 - [.NET 7.0 Desktop Runtime](https://dotnet.microsoft.com/en-us/download/dotnet/7.0)
@@ -12,7 +14,7 @@ It is a fork of tkachov’s original *Modding Tool*, enhanced with additional to
 ## Usage
 
 1. Download the latest release from the [Releases](./releases) tab.  
-2. Launch `DAT1GUI.exe`.  
+2. Launch `DAT1-GUI.exe`.  
 3. Open supported files using the File menu.  
 
 ## Building from Source

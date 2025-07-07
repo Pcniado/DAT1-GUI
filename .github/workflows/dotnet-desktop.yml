@@ -1,0 +1,54 @@
+name: .NET 7 Desktop CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+
+    runs-on: windows-latest
+
+    env:
+      Solution_Name: DAT1-GUI.sln
+      Build_Project_Path: ModdingTool\ModdingTool.csproj
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET 7 SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 7.0.x
+
+    - name: Restore NuGet packages
+      run: dotnet restore ${{ env.Solution_Name }}
+
+    - name: Build the project (suppress warnings in output)
+      run: |
+        dotnet build $env:Solution_Name `
+          --configuration ${{ matrix.configuration }} `
+          --no-restore `
+          -warnasmessage:*
+
+    # Optional: Add test step if you have a test project
+    # - name: Run unit tests
+    #   run: dotnet test path\to\tests.csproj --configuration ${{ matrix.configuration }} --no-build
+
+    - name: Publish build output
+      run: |
+        dotnet publish $env:Build_Project_Path `
+          --configuration ${{ matrix.configuration }} `
+          --output ./publish/${{ matrix.configuration }}
+
+    - name: Upload published app
+      uses: actions/upload-artifact@v4
+      with:
+        name: ModdingTool-${{ matrix.configuration }}
+        path: ./publish/${{ matrix.configuration }}
