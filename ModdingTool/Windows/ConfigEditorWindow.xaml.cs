@@ -125,6 +125,10 @@ namespace ModdingTool.Windows
                 await Task.Run(() =>
                 {
                     var json = JObject.Parse(jsonText);
+                    if (json["TYPE"] == null || json["TYPE"]["Type"] == null)
+                        throw new InvalidDataException("Config JSON must contain a TYPE object with a Type property.");
+                    if (json["DATA"] == null)
+                        throw new InvalidDataException("Config JSON must contain a DATA object.");
                     var configType = (string)json["TYPE"]["Type"];
                     var hasRefs = json.ContainsKey("REFS");
                     var config = Config.Make(configType, hasRefs);
