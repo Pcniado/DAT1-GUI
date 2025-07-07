@@ -20,6 +20,18 @@ It is a fork of tkachov’s original *Modding Tool*, enhanced with additional to
 2. Launch `DAT1-GUI.exe`.  
 3. Open supported files using the File menu.  
 
+## Contributions
+
+If you want to contribute, you're very welcome!
+
+No contribution is too small. If you've found a bug, or have a suggestion, or want to write a guide for other users — feel free to help the way you can.
+
+Of course, I'd be glad to accept code changes. If you can fix a bug, or implement a feature you've always wanted, or write a tool based on the code here, don't hesitate to send a PR or make a fork.
+
+You can start by looking at the Issues page, where you can create a new one if it's a bug or suggestion, or find one you'd like to help with.
+
+See Building page for information on how to build the source code on your machine.
+
 ## Building from Source
 
 See [BUILDING.md](./BUILDING.md) for instructions on how to build the project.
