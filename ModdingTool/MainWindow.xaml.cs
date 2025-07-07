@@ -1208,6 +1208,8 @@ namespace ModdingTool {
 			if (result == MessageBoxResult.Yes) {
 				_replacedAssets.Clear();
 				_addedAssets.Clear();
+				SetProjectDirty(true);
+				SaveProjectIfLoaded();
 			}
 		}
 
@@ -1222,6 +1224,7 @@ namespace ModdingTool {
 			var path = Path.Combine(cwd, "stages");
 			var stagePath = Path.Combine(path, window.Stage);
 
+			bool anyChanged = false;
 			for (var spanIndex = 0; spanIndex < 256; ++spanIndex) {
 				var spanDir = Path.Combine(stagePath, $"{spanIndex}");
 				if (!Directory.Exists(spanDir)) continue;
@@ -1242,6 +1245,7 @@ namespace ModdingTool {
 					if (assetIndex != -1) {
 						var asset = _assets[assetIndex];
 						_replacedAssets.Set(asset, file);
+						anyChanged = true;
 						continue;
 					}
 
@@ -1271,7 +1275,12 @@ namespace ModdingTool {
 					} else {
 						_addedAssets.Set(newAsset, file);
 					}
+					anyChanged = true;
 				}
+			}
+			if (anyChanged) {
+				SetProjectDirty(true);
+				SaveProjectIfLoaded();
 			}
 		}
 
@@ -1485,6 +1494,8 @@ namespace ModdingTool {
 			var asset = (Asset)assets[0];
 			var path = dialog.FileName;
 			_replacedAssets.Set(asset, path);
+			SetProjectDirty(true);
+			SaveProjectIfLoaded();
 		}
 
 		private void ReplaceAssets(System.Collections.IList assets) {
@@ -1502,6 +1513,8 @@ namespace ModdingTool {
 			foreach (var asset in assets) {
 				_replacedAssets.Set((Asset)asset, path);
 			}
+			SetProjectDirty(true);
+			SaveProjectIfLoaded();
 		}
 
 		private static void CopyPath(System.Collections.IList assets) {
@@ -1593,6 +1606,8 @@ namespace ModdingTool {
 				await win.SaveConfigFileAsync(tempConfigPath);
 				this.Dispatcher.Invoke(() => {
 					_replacedAssets[asset] = tempConfigPath;
+					SetProjectDirty(true);
+					SaveProjectIfLoaded();
 				});
 				win.Dispatcher.Invoke(() => {
 					win.SetStatusText("Asset added to .stage");
@@ -1610,6 +1625,31 @@ namespace ModdingTool {
 			{
 				try { _configEditorWindow.Close(); } catch { }
 				_configEditorWindow = null;
+			}
+			bool hasUnsaved = _projectDirty || _replacedAssets.Count > 0 || _addedAssets.Count > 0;
+			if (hasUnsaved) {
+				string msg = _currentProjectFolder == null ?
+					"You have unsaved replaced or added assets. Save to a new project before exiting?" :
+					"You have unsaved changes in your project. Save before exiting?";
+				var result = ShowCustomMessageBox(msg, "Unsaved Changes", true);
+				if (result) {
+					if (_currentProjectFolder == null) {
+						var (folder, modName, author) = ModdingTool.Utils.ProjectHelper.CreateNewProject(this);
+						if (!string.IsNullOrEmpty(folder) && !string.IsNullOrEmpty(modName) && !string.IsNullOrEmpty(author)) {
+							SaveProject(folder, modName, author, _replacedAssets);
+							_currentProjectFolder = folder;
+							_currentModName = modName;
+							_currentAuthor = author;
+							SetProjectDirty(false);
+						} else {
+							e.Cancel = true;
+						}
+					} else {
+						SaveProjectIfLoaded();
+					}
+				} else if (ShowCustomMessageBox("Are you sure you want to exit without saving?", "Confirm Exit", true) == false) {
+					e.Cancel = true;
+				}
 			}
 		}
 
