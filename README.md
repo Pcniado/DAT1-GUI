@@ -1,7 +1,7 @@
 # DAT1 GUI
 
 **DAT1 GUI** is a standalone toolkit for working with mod files used in PC ports of Insomniac Games titles.  
-It is a fork of tkachov’s original *Modding Tool*, enhanced with additional tools and improvements.
+It is a fork of Tkachov’s original *Modding Tool*, enhanced with additional tools and improvements.
 
 ## Features
 
