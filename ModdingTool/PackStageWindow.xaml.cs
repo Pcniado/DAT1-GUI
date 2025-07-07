@@ -16,9 +16,10 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool {
-	public partial class PackStageWindow: Window {
+	public partial class PackStageWindow: MetroWindow {
 		private bool _initializing = true;
 		private Dictionary<Asset, string> _mainWindowReplacedAssets;
 		private Dictionary<Asset, string> _mainWindowAddedAssets;

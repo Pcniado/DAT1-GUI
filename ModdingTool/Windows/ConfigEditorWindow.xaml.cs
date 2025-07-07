@@ -7,10 +7,11 @@ using System.IO;
 using System.Windows;
 using System.Threading.Tasks;
 using System.Windows.Threading;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool.Windows
 {
-    public partial class ConfigEditorWindow : Window
+    public partial class ConfigEditorWindow : MetroWindow
     {
         private string? _currentFilePath;
         private JObject? _currentJson;

@@ -11,10 +11,11 @@ using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool;
 
-public partial class SearchWindow: Window {
+public partial class SearchWindow: MetroWindow {
 	private List<Asset> _assets;
 	private Dictionary<string, List<int>> _assetsByPath;
 	private System.Action<string> _callback;

@@ -6,6 +6,8 @@ It is a fork of tkachov’s original *Modding Tool*, enhanced with additional to
 ## Features
 
 - Config editor
+- Revamped User Interface
+- Automatic downloads of hashes for each of the supported games
 
 ## Requirements
 

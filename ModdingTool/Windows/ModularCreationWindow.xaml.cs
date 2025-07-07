@@ -15,10 +15,11 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media.Imaging;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool.Windows;
 
-public partial class ModularCreationWindow: Window {
+public partial class ModularCreationWindow: MetroWindow {
 	#region state
 
 	private bool _initializing = true;

@@ -1,11 +1,15 @@
-﻿<Window x:Class="ModdingTool.PackStageWindow"
+﻿<Controls:MetroWindow x:Class="ModdingTool.PackStageWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:ModdingTool"
+        xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
         mc:Ignorable="d"
-        Title="Pack replaced assets as .stage" Height="500" Width="500">
+        Title="Pack replaced assets as .stage" Height="500" Width="500"
+        WindowTitleBrush="{StaticResource AppBackgroundBrush}"
+        BorderThickness="0"
+        GlowBrush="{x:Null}">
 	<Border BorderThickness="0,1,0,0" BorderBrush="#EEE">
 		<Grid>
 			<Grid Height="22" Margin="7,7,7,0" VerticalAlignment="Top">
@@ -77,4 +81,4 @@
 			</Grid>
 		</Grid>
 	</Border>
-</Window>
+</Controls:MetroWindow>

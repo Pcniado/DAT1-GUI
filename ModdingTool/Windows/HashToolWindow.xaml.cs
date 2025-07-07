@@ -5,10 +5,11 @@
 
 using System.Windows;
 using System.Windows.Input;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool;
 
-public partial class HashToolWindow: Window {
+public partial class HashToolWindow: MetroWindow {
 	protected bool _normalizeInput = true;
 	public bool NormalizeInput {
 		get => _normalizeInput;

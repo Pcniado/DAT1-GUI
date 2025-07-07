@@ -8,10 +8,11 @@ using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Input;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool;
 
-public partial class StageSelector: Window {
+public partial class StageSelector: MetroWindow {
 	private ObservableCollection<string> _stages = new();
 	private bool _verified = false;
 

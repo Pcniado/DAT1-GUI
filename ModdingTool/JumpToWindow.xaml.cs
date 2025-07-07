@@ -5,10 +5,11 @@
 
 using System.Windows;
 using System.Windows.Input;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool;
 
-public partial class JumpToWindow: Window {
+public partial class JumpToWindow: MetroWindow {
 	public bool Jumped = false;
 	public string Path = null;
 

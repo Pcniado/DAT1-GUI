@@ -2,19 +2,38 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:ModdingTool"
+             xmlns:mah="http://metro.mahapps.com/winfx/xaml/controls"
              StartupUri="MainWindow.xaml">
 	<Application.Resources>
-		<ContextMenu x:Key="AssetsListContextMenu">
-			<MenuItem Name="SelectedItemsCount" Header="0 selected" IsEnabled="false" />
-			<Separator/>
-			<MenuItem Name="ExtractAsset" Header="Extract selected..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetCommand}" />
-			<MenuItem Name="ExtractAssetToStage" Header="Extract to stage..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetToStageCommand}" />
-			<MenuItem Name="ReplaceAsset" Header="Replace selected..." Command="{x:Static local:AssetsListContextMenu.ReplaceAssetCommand}" />
-			<MenuItem Name="ReplaceAssets" Header="Replace all selected with the same file..." Command="{x:Static local:AssetsListContextMenu.ReplaceAssetsCommand}" />
-			<Separator/>
-			<MenuItem Name="CopyPath" Header="Copy path" Command="{x:Static local:AssetsListContextMenu.CopyPathCommand}" />
-			<MenuItem Name="CopyRef" Header="Copy ref" Command="{x:Static local:AssetsListContextMenu.CopyRefCommand}" />
-			<MenuItem Name="EditConfig" Header="Edit Config..." Command="{x:Static local:AssetsListContextMenu.EditConfigCommand}" />
-		</ContextMenu>
+
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Controls.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Fonts.xaml" />
+				<ResourceDictionary Source="pack://application:,,,/MahApps.Metro;component/Styles/Themes/Light.Blue.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+
+
+			<ImageBrush x:Key="AppBackgroundBrush"
+				ImageSource="pack://application:,,,/background.jpg"
+				Stretch="None"
+				AlignmentX="Center"
+				AlignmentY="Center"/>
+
+			<SolidColorBrush x:Key="AppInactiveTitleOverlay" Color="#80000000"/>
+
+			<ContextMenu x:Key="AssetsListContextMenu">
+				<MenuItem Name="SelectedItemsCount" Header="0 selected" IsEnabled="false" />
+				<Separator/>
+				<MenuItem Name="ExtractAsset" Header="Extract selected..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetCommand}" />
+				<MenuItem Name="ExtractAssetToStage" Header="Extract to stage..." Command="{x:Static local:AssetsListContextMenu.ExtractAssetToStageCommand}" />
+				<MenuItem Name="ReplaceAsset" Header="Replace selected..." Command="{x:Static local:AssetsListContextMenu.ReplaceAssetCommand}" />
+				<MenuItem Name="ReplaceAssets" Header="Replace all selected with the same file..." Command="{x:Static local:AssetsListContextMenu.ReplaceAssetsCommand}" />
+				<Separator/>
+				<MenuItem Name="CopyPath" Header="Copy path" Command="{x:Static local:AssetsListContextMenu.CopyPathCommand}" />
+				<MenuItem Name="CopyRef" Header="Copy ref" Command="{x:Static local:AssetsListContextMenu.CopyRefCommand}" />
+				<MenuItem Name="EditConfig" Header="Edit Config..." Command="{x:Static local:AssetsListContextMenu.EditConfigCommand}" />
+			</ContextMenu>
+		</ResourceDictionary>
 	</Application.Resources>
 </Application>

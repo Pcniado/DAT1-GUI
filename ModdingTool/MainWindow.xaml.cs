@@ -23,9 +23,10 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
 using System.Net.Http;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool {
-	public partial class MainWindow: Window {
+	public partial class MainWindow: MetroWindow {
 		// tick
 		private Thread? _tickThread;
 		private List<Thread> _taskThreads = new();

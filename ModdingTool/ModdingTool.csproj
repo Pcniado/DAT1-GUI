@@ -14,17 +14,41 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="background.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="33BB54A2-3924-4D79-994C-6CF4580D2F93.ico" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
+    <PackageReference Include="MahApps.Metro" Version="2.4.10" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\DAT1\DAT1.csproj" />
     <ProjectReference Include="..\OverstrikeShared\OverstrikeShared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="background.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Update="Properties\Resources.Designer.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Update="Properties\Resources.resx">
+      <Generator>ResXFileCodeGenerator</Generator>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
