@@ -70,6 +70,33 @@ namespace ModdingTool {
 			}
 		}
 
+		public MainWindow(string projectFolder, string modName, string author)
+		{
+			InitializeComponent();
+			this.Activated += OnActivated;
+			this.Deactivated += OnDeactivated;
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetToStageCommand, ContextMenu_ExtractAssetToStage));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetCommand, ContextMenu_ReplaceAsset));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetsCommand, ContextMenu_ReplaceAssets));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
+
+			StartTickThread();
+			LoadSettings();
+
+			_currentProjectFolder = projectFolder;
+			_currentModName = modName;
+			_currentAuthor = author;
+			_replacedAssets.Clear();
+			SetProjectDirty(false);
+			UpdateWindowTitle();
+			ShowAssetsFromFolder("");
+			AddRecentProject(projectFolder);
+			ShowCustomMessageBox($"Created new project at: {_currentProjectFolder}", "New Project");
+		}
+
 		private void OnActivated(object sender, EventArgs e)
 		{
             this.WindowTitleBrush = (System.Windows.Media.Brush)FindResource("AppTitleBarGradient");
@@ -146,26 +173,44 @@ namespace ModdingTool {
 		#region load toc
 
 		private void StartLoadTOCThread(string path) {
+			string baseDir = path;
 			if (File.Exists(path)) {
-				path = Path.GetDirectoryName(path);
+				baseDir = Path.GetDirectoryName(path);
 			}
-			if (!Directory.Exists(path)) {
+			if (!Directory.Exists(baseDir)) {
 				return;
 			}
 
-			var tocPath = Path.Combine(path, "toc.BAK");
-			if (!File.Exists(tocPath)) {
-				tocPath = Path.Combine(path, "toc");
+			string tocPath = null;
+			string gameFolder = null;
+
+			// i20: asset_archive/toc
+			string i20Toc = Path.Combine(baseDir, "asset_archive", "toc");
+			if (File.Exists(i20Toc)) {
+				tocPath = i20Toc;
+				gameFolder = baseDir;
 			}
-			if (!File.Exists(tocPath)) {
+			// i29+: toc in game folder
+			else if (File.Exists(Path.Combine(baseDir, "toc"))) {
+				tocPath = Path.Combine(baseDir, "toc");
+				gameFolder = baseDir;
+			}
+			// fallback: toc.BAK in game folder
+			else if (File.Exists(Path.Combine(baseDir, "toc.BAK"))) {
+				tocPath = Path.Combine(baseDir, "toc.BAK");
+				gameFolder = baseDir;
+			}
+			else {
+				// Not found
 				return;
 			}
 
-			_recentPaths.Remove(path);
-			_recentPaths.Insert(0, path);
+			_recentPaths.Remove(baseDir);
+			_recentPaths.Insert(0, baseDir);
 			SaveRecentTxt();
 
-			//
+			// Optionally store gameFolder for later use
+			_gamePath = gameFolder;
 
 			Thread thread = new(() => LoadTOC(tocPath));
 			_taskThreads.Add(thread);
@@ -193,6 +238,10 @@ namespace ModdingTool {
                 string hashesTarget = null;
                 bool needDownload = false;
                 bool gameDetected = false;
+                string exeSearchDir = tocDir;
+                if (path.Replace('/', '\\').EndsWith("asset_archive\\toc", StringComparison.OrdinalIgnoreCase)) {
+                    exeSearchDir = Directory.GetParent(Directory.GetParent(path).FullName).FullName; // parent of asset_archive
+                }
 
                 using (var f = File.OpenRead(path))
                 using (var r = new BinaryReader(f))
@@ -203,7 +252,7 @@ namespace ModdingTool {
                         string[] exes = new[] { "MilesMorales.exe", "MM.exe" };
                         foreach (var exe in exes)
                         {
-                            if (File.Exists(Path.Combine(tocDir, exe)))
+                            if (File.Exists(Path.Combine(exeSearchDir, exe)))
                             {
                                 exeName = exe;
                                 break;
@@ -231,7 +280,7 @@ namespace ModdingTool {
                         string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe" };
                         foreach (var exe in exes)
                         {
-                            if (File.Exists(Path.Combine(tocDir, exe)))
+                            if (File.Exists(Path.Combine(exeSearchDir, exe)))
                             {
                                 exeName = exe;
                                 break;
@@ -307,6 +356,31 @@ namespace ModdingTool {
                             }
                         }
                     }
+                    // fix for the file not being released
+                    bool fileReady = false;
+                    for (int attempt = 0; attempt < 10; attempt++)
+                    {
+                        try
+                        {
+                            using (var sr = new FileStream(hashesTarget, FileMode.Open, FileAccess.Read, FileShare.Read))
+                            {
+                                fileReady = true;
+                            }
+                            break;
+                        }
+                        catch (IOException)
+                        {
+                            Thread.Sleep(100);
+                        }
+                    }
+                    if (!fileReady)
+                    {
+                        Dispatcher.Invoke(() => {
+                            OverlayHeaderLabel.Text = $"Failed to access hashes file after download.";
+                            OverlayOperationLabel.Text = "-";
+                        });
+                        return;
+                    }
                 }
             }
             catch (Exception ex)
@@ -319,7 +393,7 @@ namespace ModdingTool {
             }
 
             // toc
-            _toc = LoadTOCFile(path);
+			_toc = LoadTOCFile(path);
 			if (_toc == null) {
 				return;
 			}
@@ -428,6 +502,7 @@ namespace ModdingTool {
 			root.Children["[WEM]"] = new();
 
 			void AddPath(string dir, int assetIndex, bool makeFullPath = false) {
+				if (assetIndex < 0 || assetIndex >= _assets.Count) return;
 				if (dir == null) dir = "";
 				if (makeFullPath)
 					_assets[assetIndex].FullPath = Path.Combine(dir, _assets[assetIndex].Name);
@@ -563,7 +638,7 @@ namespace ModdingTool {
 			List<Asset> assetList = new();
 
 			if (_assetsByPath.ContainsKey(path)) {
-				foreach (var index in _assetsByPath[path]) {
+				foreach (var index in GetAssetIndices(path)) {
 					assetList.Add(_assets[index]);
 				}
 
@@ -672,7 +747,7 @@ namespace ModdingTool {
 
 						if (folderToOpen == null) {
 							foreach (var dirname in _assetsByPath.Keys) {
-								if (_assetsByPath[dirname].Contains(assetIndex)) {
+								if (GetAssetIndices(dirname).Contains(assetIndex)) {
 									folderToOpen = dirname;
 									break;
 								}
@@ -859,7 +934,7 @@ namespace ModdingTool {
 			var foundAssetsTotal = 0;
 			foreach (var _path in _assetsByPath.Keys) {
 				if (_path.StartsWith(folder)) {
-					var assets = _assetsByPath[_path];
+					var assets = GetAssetIndices(_path);
 					matchingPaths.Add(Path.GetRelativePath(folder, _path), assets);
 					foundAssetsTotal += assets.Count;
 
@@ -924,7 +999,7 @@ namespace ModdingTool {
 			var foundAssetsTotal = 0;
 			foreach (var _path in _assetsByPath.Keys) {
 				if (_path.StartsWith(folder)) {
-					var assets = _assetsByPath[_path];
+					var assets = GetAssetIndices(_path);
 					matchingPaths.Add(_path, assets);
 					foundAssetsTotal += assets.Count;
 
@@ -1495,5 +1570,176 @@ namespace ModdingTool {
 		}
 
 		#endregion
+<<<<<<< Updated upstream
+=======
+
+		public void SaveProject(string folderPath, string modName, string author, Dictionary<Asset, string> replacedAssets)
+		{
+			var project = new ModProject {
+				ModName = modName,
+				Author = author,
+				GameId = _gameId,
+				GamePath = _gamePath,
+				Replacements = replacedAssets.Select(kvp => new ModProject.ReplacementEntry {
+					Span = kvp.Key.Span,
+					Id = kvp.Key.Id,
+					Name = kvp.Key.Name,
+					FullPath = kvp.Key.FullPath,
+					Replacement = Path.Combine("replacements", Path.GetFileName(kvp.Value))
+				}).ToList()
+			};
+			var replacementsDir = Path.Combine(folderPath, "replacements");
+			Directory.CreateDirectory(replacementsDir);
+			foreach (var kvp in replacedAssets) {
+				var dest = Path.Combine(replacementsDir, Path.GetFileName(kvp.Value));
+				if (!File.Exists(dest))
+					File.Copy(kvp.Value, dest, true);
+			}
+			var json = System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
+			File.WriteAllText(Path.Combine(folderPath, "stage.json"), json);
+		}
+
+		public (string modName, string author, Dictionary<Asset, string> replacedAssets, string gameId, string gamePath) LoadProject(string folderPath)
+		{
+			var json = File.ReadAllText(Path.Combine(folderPath, "stage.json"));
+			var project = System.Text.Json.JsonSerializer.Deserialize<ModProject>(json);
+			var replacedAssets = new Dictionary<Asset, string>();
+			foreach (var entry in project.Replacements) {
+				replacedAssets.Add(new Asset {
+					Span = entry.Span,
+					Id = entry.Id,
+					Name = entry.Name,
+					FullPath = entry.FullPath
+				}, Path.Combine(folderPath, entry.Replacement));
+			}
+			return (project.ModName, project.Author, replacedAssets, project.GameId, project.GamePath);
+		}
+
+		private void SetProjectDirty(bool dirty)
+		{
+			_projectDirty = dirty;
+			UpdateWindowTitle();
+		}
+
+		private void UpdateWindowTitle()
+		{
+			string baseTitle = "DAT1 GUI";
+			if (!string.IsNullOrEmpty(_currentModName))
+				baseTitle += $" - {_currentModName}";
+			if (_projectDirty)
+				baseTitle = "*" + baseTitle;
+			this.Title = baseTitle;
+		}
+
+		private void SaveProjectIfLoaded()
+		{
+			if (!string.IsNullOrEmpty(_currentProjectFolder))
+			{
+				SaveProject(_currentProjectFolder, _currentModName, _currentAuthor, _replacedAssets);
+				SetProjectDirty(false);
+			}
+		}
+
+		private bool ShowCustomMessageBox(string message, string title = "Message", bool showCancel = false)
+		{
+			var msgBox = new ModdingTool.Windows.CustomMessageBox(message, title, showCancel);
+			msgBox.Owner = this;
+			msgBox.ShowDialog();
+			return msgBox.Result;
+		}
+
+		private void AddRecentProject(string folderPath)
+		{
+			_recentProjectFolders.Remove(folderPath);
+			_recentProjectFolders.Insert(0, folderPath);
+			if (_recentProjectFolders.Count > MaxRecentProjects)
+				_recentProjectFolders.RemoveAt(_recentProjectFolders.Count - 1);
+		}
+
+		private void ProjectMenu_SubmenuOpened(object sender, RoutedEventArgs e)
+		{
+			OpenRecentProjectMenu.Items.Clear();
+			if (_recentProjectFolders.Count == 0)
+			{
+				var noItem = new System.Windows.Controls.MenuItem
+				{
+					Header = "(No recent projects)",
+					IsEnabled = false
+				};
+				OpenRecentProjectMenu.Items.Add(noItem);
+			}
+			else
+			{
+				foreach (var folder in _recentProjectFolders)
+				{
+					var item = new System.Windows.Controls.MenuItem
+					{
+						Header = System.IO.Path.GetFileName(folder),
+						ToolTip = folder,
+						Tag = folder
+					};
+					item.Click += OpenRecentProject_Click;
+					OpenRecentProjectMenu.Items.Add(item);
+				}
+			}
+		}
+
+		private void OpenRecentProject_Click(object sender, RoutedEventArgs e)
+		{
+			if (sender is System.Windows.Controls.MenuItem item && item.Tag is string folderPath)
+			{
+				OpenProjectByPath(folderPath);
+			}
+		}
+
+		private void OpenProjectByPath(string folderPath)
+		{
+			_currentProjectFolder = folderPath;
+			try {
+				var (modName, author, replacedAssets, gameId, gamePath) = LoadProject(_currentProjectFolder);
+				if (string.IsNullOrEmpty(gamePath) || !Directory.Exists(gamePath))
+				{
+					var msgBox = new ModdingTool.Windows.CustomMessageBox($"Game folder not found: {gamePath}\nPlease locate the game folder.", "Game Not Found", true);
+					msgBox.Owner = this;
+					msgBox.ShowDialog();
+					if (!msgBox.Result) return;
+					var dialog = new Microsoft.WindowsAPICodePack.Dialogs.CommonOpenFileDialog();
+					dialog.IsFolderPicker = true;
+					dialog.Title = "Select game folder";
+					if (dialog.ShowDialog() == Microsoft.WindowsAPICodePack.Dialogs.CommonFileDialogResult.Ok)
+					{
+						gamePath = dialog.FileName;
+						var json = File.ReadAllText(Path.Combine(folderPath, "stage.json"));
+						var project = System.Text.Json.JsonSerializer.Deserialize<ModProject>(json);
+						project.GamePath = gamePath;
+						File.WriteAllText(Path.Combine(folderPath, "stage.json"), System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+					}
+					else return;
+				}
+				_currentModName = modName;
+				_currentAuthor = author;
+				_replacedAssets = replacedAssets;
+				_gameId = gameId;
+				_gamePath = gamePath;
+				string tocPath = Path.Combine(gamePath, "toc");
+				if (_lastLoadedTocPath == null || !_lastLoadedTocPath.Equals(tocPath, StringComparison.OrdinalIgnoreCase))
+				{
+					StartLoadTOCThread(tocPath);
+					_lastLoadedTocPath = tocPath;
+				}
+				SetProjectDirty(false);
+				UpdateWindowTitle();
+				ShowAssetsFromFolder("");
+				AddRecentProject(folderPath);
+				ShowCustomMessageBox($"Loaded project: {modName}\nAuthor: {author}", "Open Project");
+			} catch (Exception ex) {
+				ShowCustomMessageBox($"Failed to load project: {ex.Message}", "Error");
+			}
+		}
+		private List<int> GetAssetIndices(string key)
+		{
+			return _assetsByPath.ContainsKey(key) ? _assetsByPath[key] : new List<int>();
+		}
+>>>>>>> Stashed changes
 	}
 }

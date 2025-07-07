@@ -31,7 +31,7 @@
 			<RowDefinition Height="30" />
 		</Grid.RowDefinitions>
 
-		<Border BorderThickness="0,1,0,1" BorderBrush="#CCC">
+		<Border BorderThickness="0,1,0,1" BorderBrush="Transparent">
 			<ScrollViewer ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Visible" Grid.Row="0">
 				<Grid x:Name="_MainGrid" HorizontalAlignment="Stretch" VerticalAlignment="Top" Background="#FFF" />
 			</ScrollViewer>

@@ -98,7 +98,7 @@ namespace ModdingTool.Windows
 
         private void UpdateJsonValidityIndicator()
         {
-            Dispatcher.Invoke(() => {
+            Dispatcher.Invoke(() => {   
                 try
                 {
                     var text = JsonEditor.Text;

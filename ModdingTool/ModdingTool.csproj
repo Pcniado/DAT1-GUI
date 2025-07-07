@@ -14,12 +14,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\background.jpg" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="33BB54A2-3924-4D79-994C-6CF4580D2F93.ico" />
+    <Resource Include="Resources\background.jpg" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="AvalonEdit" Version="6.3.1.120" />
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="5.1.0" />
     <PackageReference Include="Pfim" Version="0.11.3" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>

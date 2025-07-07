@@ -1,0 +1,34 @@
+<Controls:MetroWindow x:Class="ModdingTool.Windows.ModInfoPrompt"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:Controls="http://metro.mahapps.com/winfx/xaml/controls"
+        Title="Project Settings" Height="200" Width="370" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        BorderThickness="0"
+        GlowBrush="{x:Null}"
+        WindowTitleBrush="{DynamicResource AppTitleBarGradient}">
+    <Controls:MetroWindow.Resources>
+        <SolidColorBrush x:Key="AccentColorBrush" Color="#FF888888"/>
+    </Controls:MetroWindow.Resources>
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Text="Mod Name:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBox x:Name="ModNameBox" Grid.Row="0" Grid.Column="1" MinWidth="180"/>
+
+        <TextBlock Text="Author:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,10,10,0"/>
+        <TextBox x:Name="AuthorBox" Grid.Row="1" Grid.Column="1" Margin="0,10,0,0" MinWidth="180"/>
+
+        <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="OK" Width="70" Margin="0,0,10,0" Click="Ok_Click"/>
+            <Button Content="Cancel" Width="70" Click="Cancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Controls:MetroWindow> 
