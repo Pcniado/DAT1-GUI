@@ -22,6 +22,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Threading.Tasks;
+using System.Net.Http;
 
 namespace ModdingTool {
 	public partial class MainWindow: Window {
@@ -170,8 +171,98 @@ namespace ModdingTool {
 				OverlayOperationLabel.Text = "-";
 			});
 
-			// toc
+			string hashesFileToLoad = null;
+			try {
+				var tocDir = Path.GetDirectoryName(path);
+				string hashesUrl = null;
+				string exeName = null;
+				string hashesTarget = null;
+				bool needDownload = false;
+				bool gameDetected = false;
 
+				using (var f = File.OpenRead(path))
+				using (var r = new BinaryReader(f)) {
+					uint magic = r.ReadUInt32();
+					if (magic == 0x77AF12AF) { // TOC_I20 (MSMR/MM)
+						hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i20.txt";
+						hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i20.txt");
+						hashesFileToLoad = hashesTarget;
+						gameDetected = true;
+						needDownload = !File.Exists(hashesTarget);
+					} else if (magic == 0x34E89035) { // TOC_I29 (RCRA/MSM2/i33)
+						string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe" };
+						foreach (var exe in exes) {
+							if (File.Exists(Path.Combine(tocDir, exe))) {
+								exeName = exe;
+								break;
+							}
+						}
+						if (exeName == "RiftApart.exe") {
+							hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i29.txt";
+							hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i29.txt");
+							hashesFileToLoad = hashesTarget;
+							gameDetected = true;
+							needDownload = !File.Exists(hashesTarget);
+						} else if (exeName == "Spider-Man2.exe") {
+							hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
+							hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i30.txt");
+							hashesFileToLoad = hashesTarget;
+							gameDetected = true;
+							needDownload = !File.Exists(hashesTarget);
+						} else if (exeName == "i33.exe") {
+							hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i33.txt";
+							hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i33.txt");
+							hashesFileToLoad = hashesTarget;
+							gameDetected = true;
+							needDownload = !File.Exists(hashesTarget);
+						}
+					}
+				}
+				if (gameDetected && needDownload && hashesUrl != null && hashesTarget != null) {
+					Dispatcher.Invoke(() => {
+						OverlayHeaderLabel.Text = $"Downloading hashes...";
+						OverlayOperationLabel.Text = hashesUrl;
+					});
+					using (var client = new System.Net.Http.HttpClient()) {
+						using (var response = client.GetAsync(hashesUrl, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult()) {
+							response.EnsureSuccessStatusCode();
+							var contentLength = response.Content.Headers.ContentLength;
+							using (var stream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
+							using (var fs = new FileStream(hashesTarget, FileMode.Create, FileAccess.Write, FileShare.None)) {
+								var buffer = new byte[8192];
+								long totalRead = 0;
+								int read;
+								int lastKb = 0;
+								int totalKb = contentLength.HasValue ? (int)(contentLength.Value / 1024) : -1;
+								while ((read = stream.Read(buffer, 0, buffer.Length)) > 0) {
+									fs.Write(buffer, 0, read);
+									totalRead += read;
+									int currentKb = (int)(totalRead / 1024);
+									if (currentKb != lastKb || read == 0) {
+										lastKb = currentKb;
+										Dispatcher.Invoke(() => {
+											if (totalKb > 0) {
+												OverlayHeaderLabel.Text = $"Downloading hashes... ({currentKb}/{totalKb} KB)";
+											} else {
+												OverlayHeaderLabel.Text = $"Downloading hashes... ({currentKb} KB)";
+											}
+											OverlayOperationLabel.Text = hashesUrl;
+										});
+									}
+								}
+							}
+						}
+					}
+				}
+			} catch (Exception ex) {
+				Dispatcher.Invoke(() => {
+					OverlayHeaderLabel.Text = $"Failed to download hashes: {ex.Message}";
+					OverlayOperationLabel.Text = "-";
+				});
+
+			}
+
+			// toc
 			_toc = LoadTOCFile(path);
 			if (_toc == null) {
 				return;
@@ -226,11 +317,22 @@ namespace ModdingTool {
 			});
 
 			// hashes
-
 			var appdir = AppDomain.CurrentDomain.BaseDirectory;
-			var hashes_fn = Path.Combine(appdir, "hashes.txt");
+			string fallbackHashes = Path.Combine(appdir, "hashes.txt");
+			string hashes_fn = null;
+			if (hashesFileToLoad != null && File.Exists(hashesFileToLoad)) {
+				hashes_fn = hashesFileToLoad;
+			} else if (File.Exists(fallbackHashes)) {
+				hashes_fn = fallbackHashes;
+			} else {
+				// As a last resort, try hashes_i30.txt if it exists
+				string hashes_i30 = Path.Combine(appdir, "hashes_i30.txt");
+				if (File.Exists(hashes_i30)) {
+					hashes_fn = hashes_i30;
+				}
+			}
 			var knownHashes = new Dictionary<ulong, string>();
-			if (File.Exists(hashes_fn)) {
+			if (hashes_fn != null && File.Exists(hashes_fn)) {
 				var lines = File.ReadLines(hashes_fn);
 				progress = 0;
 				progressTotal = lines.Count();
@@ -241,7 +343,7 @@ namespace ModdingTool {
 
 						var lastComma = line.LastIndexOf(',');
 						var assetPath = (lastComma == -1 ? line.Substring(firstComma + 1) : line.Substring(firstComma + 1, lastComma - firstComma - 1));
-						var assetId = ulong.Parse(line.Substring(0, firstComma), NumberStyles.HexNumber);
+						var assetId = ulong.Parse(line.Substring(0, firstComma), System.Globalization.NumberStyles.HexNumber);
 
 						if (assetPath.Trim().Length > 0) {
 							knownHashes.Add(assetId, assetPath);
@@ -251,15 +353,15 @@ namespace ModdingTool {
 					++progress;
 					if (progress % 1000 == 0) {
 						Dispatcher.Invoke(() => {
-							OverlayHeaderLabel.Text = "Loading 'hashes.txt'...";
+							OverlayHeaderLabel.Text = $"Loading '{Path.GetFileName(hashes_fn)}'...";
 							OverlayOperationLabel.Text = $"{progress}/{progressTotal} hashes";
 						});
 					}
 				}
 			}
-
 			Dispatcher.Invoke(() => {
-				OverlayOperationLabel.Text = $"-";
+				OverlayHeaderLabel.Text = $"Loaded '{(hashes_fn != null ? Path.GetFileName(hashes_fn) : "NO HASHES FILE FOUND")}'";
+				OverlayOperationLabel.Text = "-";
 			});
 
 			// tree
