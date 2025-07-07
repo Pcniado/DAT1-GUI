@@ -9,6 +9,7 @@ namespace ModdingTool.Structs
         public string GameId { get; set; }
         public string GamePath { get; set; }
         public List<ReplacementEntry> Replacements { get; set; } = new();
+        public List<ReplacementEntry> AddedAssets { get; set; } = new();
 
         public class ReplacementEntry
         {

@@ -43,6 +43,7 @@ namespace ModdingTool {
 		// replaced data
 		private Dictionary<Asset, string> _replacedAssets = new();
 		private Dictionary<Asset, string> _addedAssets = new();
+		private Dictionary<Asset, string> _pendingReplacedAssets = null;
 
 		// ui
 		private SearchWindow? _searchWindow = null;
@@ -540,7 +541,7 @@ namespace ModdingTool {
 
 			// tree
 
-			_assetsByPath.Clear();
+			var assetsByPathTemp = new Dictionary<string, List<int>>();
 			TreeNode root = new();
 			root.Children["[UNKNOWN]"] = new();
 			root.Children["[WEM]"] = new();
@@ -561,10 +562,10 @@ namespace ModdingTool {
 					currentNode = currentNode.Children[part];
 				}
 
-				if (!_assetsByPath.ContainsKey(dir)) {
-					_assetsByPath[dir] = new();
+				if (!assetsByPathTemp.ContainsKey(dir)) {
+					assetsByPathTemp[dir] = new();
 				}
-				_assetsByPath[dir].Add(assetIndex);
+				assetsByPathTemp[dir].Add(assetIndex);
 			};
 
 			// tree: named assets
@@ -621,8 +622,9 @@ namespace ModdingTool {
 			// build the UI
 
 			Dispatcher.Invoke(() => {
+				_assetsByPath = assetsByPathTemp;
 				OverlayHeaderLabel.Text = "Building tree...";
-				OverlayOperationLabel.Text = $"-";
+				OverlayOperationLabel.Text = "-";
 
 				void Traverse(TreeNode n, ItemCollection i) {
 					var keysSorted = n.Children.Keys.ToList();
@@ -655,6 +657,14 @@ namespace ModdingTool {
 
 				Folders.Items.Clear();
 				Traverse(root, Folders.Items);
+
+
+				if (_pendingReplacedAssets != null)
+				{
+					_replacedAssets = _pendingReplacedAssets;
+					_pendingReplacedAssets = null;
+				}
+
 
 				ShowAssetsFromFolder("", Folders.Items.Count);
 			});
@@ -1210,6 +1220,7 @@ namespace ModdingTool {
 				_addedAssets.Clear();
 				SetProjectDirty(true);
 				SaveProjectIfLoaded();
+				SetProjectDirty(false);
 			}
 		}
 
@@ -1281,11 +1292,12 @@ namespace ModdingTool {
 			if (anyChanged) {
 				SetProjectDirty(true);
 				SaveProjectIfLoaded();
+				SetProjectDirty(false);
 			}
 		}
 
 		private void Mod_CreateFromReplaced_Click(object sender, RoutedEventArgs e) {
-			var window = new PackStageWindow(_replacedAssets, _addedAssets, _toc);
+			var window = new PackStageWindow(_replacedAssets, _addedAssets, _toc, _currentModName, _currentAuthor, _gameId);
 			window.ShowDialog();
 		}
 
@@ -1496,6 +1508,7 @@ namespace ModdingTool {
 			_replacedAssets.Set(asset, path);
 			SetProjectDirty(true);
 			SaveProjectIfLoaded();
+			SetProjectDirty(false);
 		}
 
 		private void ReplaceAssets(System.Collections.IList assets) {
@@ -1515,6 +1528,7 @@ namespace ModdingTool {
 			}
 			SetProjectDirty(true);
 			SaveProjectIfLoaded();
+			SetProjectDirty(false);
 		}
 
 		private static void CopyPath(System.Collections.IList assets) {
@@ -1608,6 +1622,7 @@ namespace ModdingTool {
 					_replacedAssets[asset] = tempConfigPath;
 					SetProjectDirty(true);
 					SaveProjectIfLoaded();
+					SetProjectDirty(false);
 				});
 				win.Dispatcher.Invoke(() => {
 					win.SetStatusText("Asset added to .stage");
@@ -1626,8 +1641,7 @@ namespace ModdingTool {
 				try { _configEditorWindow.Close(); } catch { }
 				_configEditorWindow = null;
 			}
-			bool hasUnsaved = _projectDirty || _replacedAssets.Count > 0 || _addedAssets.Count > 0;
-			if (hasUnsaved) {
+			if (_projectDirty) {
 				string msg = _currentProjectFolder == null ?
 					"You have unsaved replaced or added assets. Save to a new project before exiting?" :
 					"You have unsaved changes in your project. Save before exiting?";
@@ -1657,12 +1671,14 @@ namespace ModdingTool {
 
 		public void SaveProject(string folderPath, string modName, string author, Dictionary<Asset, string> replacedAssets)
 		{
-			var project = new ModProject {
+			var project = new ModProject
+			{
 				ModName = modName,
 				Author = author,
 				GameId = _gameId,
 				GamePath = _gamePath,
-				Replacements = replacedAssets.Select(kvp => new ModProject.ReplacementEntry {
+				Replacements = replacedAssets.Select(kvp => new ModProject.ReplacementEntry
+				{
 					Span = kvp.Key.Span,
 					Id = kvp.Key.Id,
 					Name = kvp.Key.Name,
@@ -1670,13 +1686,17 @@ namespace ModdingTool {
 					Replacement = Path.Combine("replacements", Path.GetFileName(kvp.Value))
 				}).ToList()
 			};
+
 			var replacementsDir = Path.Combine(folderPath, "replacements");
 			Directory.CreateDirectory(replacementsDir);
-			foreach (var kvp in replacedAssets) {
+
+			foreach (var kvp in replacedAssets)
+			{
 				var dest = Path.Combine(replacementsDir, Path.GetFileName(kvp.Value));
 				if (!File.Exists(dest))
 					File.Copy(kvp.Value, dest, true);
 			}
+
 			var json = System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });
 			File.WriteAllText(Path.Combine(folderPath, "stage.json"), json);
 		}
@@ -1685,15 +1705,41 @@ namespace ModdingTool {
 		{
 			var json = File.ReadAllText(Path.Combine(folderPath, "stage.json"));
 			var project = System.Text.Json.JsonSerializer.Deserialize<ModProject>(json);
+
 			var replacedAssets = new Dictionary<Asset, string>();
-			foreach (var entry in project.Replacements) {
-				replacedAssets.Add(new Asset {
+			var replacementsDir = Path.Combine(folderPath, "replacements");
+
+			foreach (var entry in project.Replacements)
+			{
+				string relPath = entry.Replacement;
+				string absPath = Path.Combine(folderPath, relPath);
+				string fileToUse = null;
+
+				if (File.Exists(absPath))
+				{
+					fileToUse = absPath;
+				}
+				else
+				{
+					// Try to find any file in replacements with the same base name (ignore extension)
+					string baseName = Path.GetFileNameWithoutExtension(relPath);
+					if (Directory.Exists(replacementsDir))
+					{
+						var files = Directory.GetFiles(replacementsDir, baseName + ".*");
+						if (files.Length > 0)
+							fileToUse = files[0];
+					}
+				}
+
+				replacedAssets.Add(new Asset
+				{
 					Span = (byte)entry.Span,
 					Id = entry.Id,
 					Name = entry.Name,
 					FullPath = entry.FullPath
-				}, Path.Combine(folderPath, entry.Replacement));
+				}, fileToUse); // fileToUse may be null if missing
 			}
+
 			return (project.ModName, project.Author, replacedAssets, project.GameId, project.GamePath);
 		}
 
@@ -1774,7 +1820,7 @@ namespace ModdingTool {
 			}
 		}
 
-		private void OpenProjectByPath(string folderPath)
+		public void OpenProjectByPath(string folderPath)
 		{
 			_currentProjectFolder = folderPath;
 			try {
@@ -1791,20 +1837,17 @@ namespace ModdingTool {
 					if (dialog.ShowDialog() == Microsoft.WindowsAPICodePack.Dialogs.CommonFileDialogResult.Ok)
 					{
 						gamePath = dialog.FileName;
-						var json = File.ReadAllText(Path.Combine(folderPath, "stage.json"));
-						var project = System.Text.Json.JsonSerializer.Deserialize<ModProject>(json);
-						project.GamePath = gamePath;
-						File.WriteAllText(Path.Combine(folderPath, "stage.json"), System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions { WriteIndented = true }));
+
 					}
 					else return;
 				}
 				_currentModName = modName;
 				_currentAuthor = author;
-				_replacedAssets = replacedAssets;
+				_pendingReplacedAssets = replacedAssets; // store temporarily
 				_gameId = gameId;
 				_gamePath = gamePath;
 				string tocPath = Path.Combine(gamePath, "toc");
-				if (_lastLoadedTocPath == null || !_lastLoadedTocPath.Equals(tocPath, StringComparison.OrdinalIgnoreCase))
+				if (_lastLoadedTocPath == null || !string.Equals(_lastLoadedTocPath, tocPath, StringComparison.OrdinalIgnoreCase))
 				{
 					StartLoadTOCThread(tocPath);
 					_lastLoadedTocPath = tocPath;
@@ -1813,7 +1856,6 @@ namespace ModdingTool {
 				UpdateWindowTitle();
 				ShowAssetsFromFolder("");
 				AddRecentProject(folderPath);
-				ShowCustomMessageBox($"Loaded project: {modName}\nAuthor: {author}", "Open Project");
 			} catch (Exception ex) {
 				ShowCustomMessageBox($"Failed to load project: {ex.Message}", "Error");
 			}

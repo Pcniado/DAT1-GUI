@@ -78,19 +78,10 @@ namespace ModdingTool.Windows
 
         private void OpenProjectFromFolder(string folder)
         {
-            var stageJson = Path.Combine(folder, "stage.json");
-            if (File.Exists(stageJson))
-            {
-                try {
-                    var json = File.ReadAllText(stageJson);
-                    var doc = System.Text.Json.JsonDocument.Parse(json);
-                    string modName = doc.RootElement.TryGetProperty("ModName", out var mn) ? mn.GetString() ?? "" : "";
-                    string author = doc.RootElement.TryGetProperty("Author", out var au) ? au.GetString() ?? "" : "";
-                    var mainWindow = new ModdingTool.MainWindow(folder, modName, author);
-                    mainWindow.Show();
-                    this.Close();
-                } catch {}
-            }
+            var mainWindow = new ModdingTool.MainWindow();
+            mainWindow.Show();
+            mainWindow.OpenProjectByPath(folder);
+            this.Close();
         }
 
         private void GitHubButton_Click(object sender, RoutedEventArgs e)

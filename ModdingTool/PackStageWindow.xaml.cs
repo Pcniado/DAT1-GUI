@@ -51,7 +51,7 @@ namespace ModdingTool {
 			public string? ReplacingFileNameToolTip { get; set; }
 		}
 
-		public PackStageWindow(Dictionary<Asset, string> replacedAssets, Dictionary<Asset, string> addedAssets, TOCBase toc) {
+		public PackStageWindow(Dictionary<Asset, string> replacedAssets, Dictionary<Asset, string> addedAssets, TOCBase toc, string modName, string author, string gameId) {
 			InitializeComponent();
 			this.Activated += OnActivated;
 			this.Deactivated += OnDeactivated;
@@ -59,10 +59,21 @@ namespace ModdingTool {
 			MakeGamesSelector(toc);
 			_initializing = false;
 
-			RestoreRememberedValues();
-
 			_mainWindowReplacedAssets = replacedAssets;
 			_mainWindowAddedAssets = addedAssets;
+			_modName = modName;
+			_author = author;
+			_gameId = gameId;
+			NameTextBox.Text = _modName ?? "";
+			AuthorTextBox.Text = _author ?? "";
+			if (!string.IsNullOrEmpty(_gameId)) {
+				foreach (var game in _games) {
+					if (string.Equals(game.Id, _gameId, StringComparison.OrdinalIgnoreCase)) {
+						GameComboBox.SelectedItem = game;
+						break;
+					}
+				}
+			}
 			UpdateAssetsList();
 		}
 
@@ -197,7 +208,9 @@ namespace ModdingTool {
 			if (dialog.ShowDialog() != CommonFileDialogResult.Ok) {
 				return;
 			}
-
+			_modName = NameTextBox.Text;
+			_author = AuthorTextBox.Text;
+			_gameId = (GameComboBox.SelectedItem as Game)?.Id;
 			var stageFileName = dialog.FileName;
 			try {
 				using var f = new FileStream(stageFileName, FileMode.Create, FileAccess.Write, FileShare.None);
