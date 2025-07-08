@@ -8,7 +8,7 @@
         mc:Ignorable="d"
         Title="Script Runner" Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        GlowBrush="{DynamicResource AccentColorBrush}"
+        BorderThickness="0"
         WindowTitleBrush="{DynamicResource AppTitleBarGradient}">
     <Grid Margin="16">
         <Grid.RowDefinitions>
@@ -17,10 +17,17 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="2*"/>
         </Grid.RowDefinitions>
-        <TextBlock Text="Python Script:" Grid.Row="0" FontWeight="Bold" Margin="0,0,0,4"/>
+        <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
+                <Button x:Name="SaveScriptButton" Content="Save Script" Width="100" Height="28" Margin="0,0,8,0" Click="SaveScriptButton_Click"/>
+                <Button x:Name="LoadScriptButton" Content="Load Script" Width="100" Height="28" Click="LoadScriptButton_Click"/>
+            </StackPanel>
+            <TextBlock Text="Python Script:" FontWeight="Bold" Margin="0,8,0,4"/>
+        </StackPanel>
         <avalonedit:TextEditor x:Name="ScriptEditor" Grid.Row="1" FontFamily="Consolas" FontSize="14" ShowLineNumbers="True" SyntaxHighlighting="Python" Margin="0,0,0,8"/>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,8">
             <Button x:Name="RunButton" Content="Run Script" Width="120" Height="32" Margin="0,0,8,0" Click="RunButton_Click"/>
+            <Button x:Name="ForceStopButton" Content="Force Stop" Width="120" Height="32" IsEnabled="False" Click="ForceStopButton_Click"/>
         </StackPanel>
         <StackPanel Grid.Row="3">
             <TextBlock Text="Results:" FontWeight="Bold" Margin="0,0,0,4"/>
