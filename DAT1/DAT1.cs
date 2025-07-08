@@ -29,6 +29,8 @@ namespace DAT1 {
 
 		private Dictionary<uint, byte[]> _rawSections = new();
 		public Dictionary<uint, Section> Sections = new();
+		private Dictionary<uint, uint> _sectionOffsets = new();
+		private Dictionary<uint, uint> _sectionSizes = new();
 
 		public T Section<T>(uint tag) where T: Section, new() {
 			if (Sections.ContainsKey(tag)) {
@@ -91,6 +93,8 @@ namespace DAT1 {
 				sectionsTags.Add(tag);
 				offsets[tag] = offset;
 				sizes[tag] = size;
+				_sectionOffsets[tag] = offset;
+				_sectionSizes[tag] = size;
 				if (minOffset > offset)
 					minOffset = offset;
 			}
@@ -264,5 +268,9 @@ namespace DAT1 {
 		}
 
 		#endregion
+
+		public List<uint> GetSectionTags() => new List<uint>(sectionsTags);
+		public uint GetSectionOffset(uint tag) => _sectionOffsets.ContainsKey(tag) ? _sectionOffsets[tag] : 0;
+		public uint GetSectionSize(uint tag) => _sectionSizes.ContainsKey(tag) ? _sectionSizes[tag] : 0;
 	}
 }

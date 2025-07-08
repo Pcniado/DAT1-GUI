@@ -28,7 +28,12 @@
                 <Button x:Name="AddToModButton" Content="Add to .stage" Width="150" Margin="0,0,8,0" Click="AddToModButton_Click" Visibility="Collapsed" />
                 <TextBlock x:Name="StatusText" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Gray" />
             </StackPanel>
-            <avalonedit:TextEditor x:Name="JsonEditor" FontFamily="Consolas" FontSize="14" ShowLineNumbers="True" SyntaxHighlighting="JavaScript" Margin="8"/>
+            <avalonedit:TextEditor x:Name="JsonEditor" FontFamily="Consolas" FontSize="14" ShowLineNumbers="True" SyntaxHighlighting="JavaScript" Margin="8">
+                <avalonedit:TextEditor.ContextMenu>
+                    <ContextMenu>
+                    </ContextMenu>
+                </avalonedit:TextEditor.ContextMenu>
+            </avalonedit:TextEditor>
         </DockPanel>
     </Grid>
 </Controls:MetroWindow> 

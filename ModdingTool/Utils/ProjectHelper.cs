@@ -4,6 +4,8 @@ using System.Windows;
 using System.Windows.Forms;
 using ModdingTool.Structs;
 using ModdingTool.Windows;
+using System.Collections.Generic;
+using DAT1;
 
 namespace ModdingTool.Utils
 {
@@ -58,6 +60,20 @@ namespace ModdingTool.Utils
                 return null;
             }
             return dialog.SelectedPath;
+        }
+
+        public static void ExtractAssetsWithStructure(IEnumerable<Structs.Asset> assets, DAT1.TOCBase toc, string outputDir)
+        {
+            foreach (var asset in assets)
+            {
+                string relPath = asset.FullPath ?? asset.Name ?? asset.Id.ToString("X016");
+                string outPath = Path.Combine(outputDir, relPath);
+                string? dir = Path.GetDirectoryName(outPath);
+                if (!string.IsNullOrEmpty(dir) && !Directory.Exists(dir))
+                    Directory.CreateDirectory(dir);
+                var bytes = toc.GetAssetBytes(asset.Span, asset.Id);
+                File.WriteAllBytes(outPath, bytes);
+            }
         }
     }
 } 

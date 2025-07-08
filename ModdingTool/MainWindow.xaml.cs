@@ -73,11 +73,13 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
 
+			UpdateProjectSettingsMenuItemState();
+
 			StartTickThread();
 			LoadSettings();
 
 			if (_recentPaths.Count > 0 ) {
-				StartLoadTOCThread(_recentPaths[0]);
+				StartLoadTOCThread(_recentPaths[0]);	
 			}
 		}
 
@@ -93,6 +95,8 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
+
+			UpdateProjectSettingsMenuItemState();
 
 			StartTickThread();
 			LoadSettings();
@@ -930,7 +934,7 @@ namespace ModdingTool {
 					textureMeta = toc_i29.GetTextureMetaByAssetIndex(index);
 				}
 
-                // Updated code: strip " (HD)" before checking extension
+                // jimbo: Updated code: strip " (HD)" before checking extension
                 string assetNameForExport = asset.Name;
                 if (assetNameForExport.EndsWith(" (HD)", StringComparison.OrdinalIgnoreCase))
                     assetNameForExport = assetNameForExport.Substring(
@@ -1324,6 +1328,13 @@ namespace ModdingTool {
 			win.Show();
 		}
 
+		private void Tools_ScriptRunner_Click(object sender, RoutedEventArgs e)
+		{
+			var win = new Windows.ScriptRunnerWindow(_assets, _toc);
+			win.Owner = this;
+			win.Show();
+		}
+
 		#endregion
 		#region folders view
 
@@ -1423,10 +1434,15 @@ namespace ModdingTool {
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
 				else
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ExtractAsset.Visibility = Visibility.Visible;
 			} else {
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ExtractAsset.Visibility = Visibility.Collapsed;
 			}
+			AssetsListContextMenu.CopyRef.Visibility = (selected > 0) ? Visibility.Visible : Visibility.Collapsed;
 		}
+
+
 
 		// command handlers
 
@@ -1856,6 +1872,7 @@ namespace ModdingTool {
 				UpdateWindowTitle();
 				ShowAssetsFromFolder("");
 				AddRecentProject(folderPath);
+				UpdateProjectSettingsMenuItemState();
 			} catch (Exception ex) {
 				ShowCustomMessageBox($"Failed to load project: {ex.Message}", "Error");
 			}
@@ -1896,5 +1913,19 @@ namespace ModdingTool {
 				ShowCustomMessageBox("Project info updated!", "Project Settings");
 			}
 		}
+
+        private void UpdateProjectSettingsMenuItemState()
+        {
+            ProjectSettingsMenuItem.IsEnabled = !string.IsNullOrEmpty(_currentProjectFolder);
+        }
+
+        private void EditConfig_Click(object sender, RoutedEventArgs e)
+        {
+            if (AssetsList.SelectedItem is ModdingTool.Structs.Asset asset && asset.Name != null && asset.Name.EndsWith(".config", StringComparison.OrdinalIgnoreCase))
+            {
+                var win = new ModdingTool.Windows.ConfigEditorWindow(asset.FullPath ?? asset.Name, null, false, true);
+                win.Show();
+            }
+        }
 	}
 }

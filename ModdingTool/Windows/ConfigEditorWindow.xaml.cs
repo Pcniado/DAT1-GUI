@@ -8,6 +8,8 @@ using System.Windows;
 using System.Threading.Tasks;
 using System.Windows.Threading;
 using MahApps.Metro.Controls;
+using System.Windows.Controls;
+using System.Windows.Media;
 
 namespace ModdingTool.Windows
 {
@@ -105,11 +107,17 @@ namespace ModdingTool.Windows
                     Newtonsoft.Json.Linq.JToken.Parse(text);
                     JsonValidityIndicator.Text = "Valid";
                     JsonValidityIndicator.Foreground = System.Windows.Media.Brushes.Green;
+                    SaveConfigButton.IsEnabled = true;
+                    SaveJsonButton.IsEnabled = true;
+                    AddToModButton.IsEnabled = true;
                 }
                 catch
                 {
                     JsonValidityIndicator.Text = "Invalid";
                     JsonValidityIndicator.Foreground = System.Windows.Media.Brushes.Red;
+                    SaveConfigButton.IsEnabled = false;
+                    SaveJsonButton.IsEnabled = false;
+                    AddToModButton.IsEnabled = false;
                 }
             });
         }
