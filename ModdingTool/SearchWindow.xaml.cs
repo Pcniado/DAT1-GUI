@@ -52,6 +52,15 @@ public partial class SearchWindow: MetroWindow {
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
 
+//populate asset type
+		var types = new HashSet<string>(_assets.ConvertAll(a => a.AssetType));
+		var typeList = new List<string>(types);
+		typeList.Sort();
+		typeList.Insert(0, "All");
+		AssetTypeComboBox.ItemsSource = typeList;
+		AssetTypeComboBox.SelectedIndex = 0;
+		AssetTypeComboBox.SelectionChanged += (s, e) => Search();
+
 		SearchTextBox.Text = "";
 		Search();
 	}
@@ -86,12 +95,13 @@ public partial class SearchWindow: MetroWindow {
 
 		var search = Normalize(SearchTextBox.Text.Trim());
 		var words = search.Split(' ', System.StringSplitOptions.RemoveEmptyEntries);
-		
-		if (words.Length > 0) {
+		string selectedType = AssetTypeComboBox.SelectedItem as string ?? "All";
+
+		if (words.Length > 0 || selectedType != "All") {
 			// search in fullpath
 			var i = 0;
 			foreach (var asset in _assets) {
-				if (asset.FullPath != null && MatchesWords(Normalize(asset.FullPath), words)) {
+				if ((selectedType == "All" || asset.AssetType == selectedType) && asset.FullPath != null && MatchesWords(Normalize(asset.FullPath), words)) {
 					_displayedResults.Add(new SearchResult {
 						AssetIndex = i,
 						Span = asset.Span,
@@ -109,8 +119,9 @@ public partial class SearchWindow: MetroWindow {
 				foreach (var assetIndex in _assetsByPath[path]) {
 					var asset = _assets[assetIndex];
 					if (asset.FullPath != null) continue;
+					if (selectedType != "All" && asset.AssetType != selectedType) continue;
 
-					var fakepath = Path.Combine(path, asset.Name);
+					var fakepath = System.IO.Path.Combine(path, asset.Name);
 					if (MatchesWords(Normalize(fakepath), words)) {
 						_displayedResults.Add(new SearchResult {
 							AssetIndex = assetIndex,

@@ -17,5 +17,16 @@ namespace ModdingTool.Structs {
 		public string? Archive { get; set; }
 		public string? FullPath = null;
 		public string RefPath { get => $"{Span}/{Id:X016}"; }
+
+		public string AssetType {
+			get {
+				string? fileName = FullPath ?? Name;
+				if (string.IsNullOrEmpty(fileName)) return "unknown";
+				var idx = fileName.LastIndexOf('.');
+				if (idx >= 0 && idx < fileName.Length - 1)
+					return fileName.Substring(idx + 1).ToLower();
+				return "unknown";
+			}
+		}
 	}
 }

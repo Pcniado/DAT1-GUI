@@ -7,64 +7,67 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 
-namespace ModdingTool {
-	public partial class App: Application {
-	}
+namespace ModdingTool
+{
+    public static class AssetsListContextMenu
+    {
+        public static readonly RoutedUICommand ExtractAssetCommand = new("Extract Asset", "ExtractAssetCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand ExtractAssetToStageCommand = new("Extract Asset to Stage", "ExtractAssetToStageCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand ReplaceAssetCommand = new("Replace Asset", "ReplaceAssetCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand ReplaceAssetsCommand = new("Replace Assets", "ReplaceAssetsCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand CopyPathCommand = new("Copy Path", "CopyPathCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand CopyRefCommand = new("Copy Ref", "CopyRefCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand EditConfigCommand = new("Edit Config", "EditConfigCommand", typeof(AssetsListContextMenu));
 
-	public static class AssetsListContextMenu {
-		public static readonly RoutedUICommand ExtractAssetCommand = new("Extract Asset", "ExtractAssetCommand", typeof(AssetsListContextMenu));
-		public static readonly RoutedUICommand ExtractAssetToStageCommand = new("Extract Asset to Stage", "ExtractAssetToStageCommand", typeof(AssetsListContextMenu));
-		public static readonly RoutedUICommand ReplaceAssetCommand = new("Replace Asset", "ReplaceAssetCommand", typeof(AssetsListContextMenu));
-		public static readonly RoutedUICommand ReplaceAssetsCommand = new("Replace Assets", "ReplaceAssetsCommand", typeof(AssetsListContextMenu));
-		public static readonly RoutedUICommand CopyPathCommand = new("Copy Path", "CopyPathCommand", typeof(AssetsListContextMenu));
-		public static readonly RoutedUICommand CopyRefCommand = new("Copy Ref", "CopyRefCommand", typeof(AssetsListContextMenu));
-		public static readonly RoutedUICommand EditConfigCommand = new("Edit Config", "EditConfigCommand", typeof(AssetsListContextMenu));
-		//public static readonly RoutedUICommand ViewTextureCommand = new("View Texture", "ViewTextureCommand", typeof(AssetsListContextMenu));
-		//public static readonly RoutedUICommand ExtractAsPNGCommand = new("Extract as PNG", "ExtractAsPNGCommand", typeof(AssetsListContextMenu));
 
-		public static MenuItem SelectedItemsCount => GetMenuItem("AssetsListContextMenu", "SelectedItemsCount");
-		public static MenuItem ExtractAsset => GetMenuItem("AssetsListContextMenu", "ExtractAsset");
-		public static MenuItem ExtractAssetToStage => GetMenuItem("AssetsListContextMenu", "ExtractAssetToStage");
-		public static MenuItem ReplaceAsset => GetMenuItem("AssetsListContextMenu", "ReplaceAsset");
-		public static MenuItem ReplaceAssets => GetMenuItem("AssetsListContextMenu", "ReplaceAssets");
-		public static MenuItem CopyPath => GetMenuItem("AssetsListContextMenu", "CopyPath");
-		public static MenuItem CopyRef => GetMenuItem("AssetsListContextMenu", "CopyRef");
-		public static MenuItem EditConfig => GetMenuItem("AssetsListContextMenu", "EditConfig");
-	//	public static MenuItem ExtractAsPNG => GetMenuItem("AssetsListContextMenu", "ExtractAsPNG");
+        public static MenuItem SelectedItemsCount => GetMenuItem("AssetsListContextMenu", "SelectedItemsCount");
+        public static MenuItem ExtractAsset => GetMenuItem("AssetsListContextMenu", "ExtractAsset");
+        public static MenuItem ExtractAssetToStage => GetMenuItem("AssetsListContextMenu", "ExtractAssetToStage");
+        public static MenuItem ReplaceAsset => GetMenuItem("AssetsListContextMenu", "ReplaceAsset");
+        public static MenuItem ReplaceAssets => GetMenuItem("AssetsListContextMenu", "ReplaceAssets");
+        public static MenuItem CopyPath => GetMenuItem("AssetsListContextMenu", "CopyPath");
+        public static MenuItem CopyRef => GetMenuItem("AssetsListContextMenu", "CopyRef");
+        public static MenuItem EditConfig => GetMenuItem("AssetsListContextMenu", "EditConfig");
 
-		public static void HandleContextMenuOpening(object sender, ContextMenuEventArgs e, int selectedCount) {
-			if (selectedCount == 0) {
-				e.Handled = true;
-				return;
-			}
+        public static void HandleContextMenuOpening(object sender, ContextMenuEventArgs e, int selectedCount)
+        {
+            if (selectedCount == 0)
+            {
+                e.Handled = true;
+                return;
+            }
 
-			var suffix = (selectedCount == 1 ? "" : "s");
-			if (SelectedItemsCount != null)
-				SelectedItemsCount.Header = $"{selectedCount} asset{suffix} selected";
+            var suffix = (selectedCount == 1 ? "" : "s");
+            if (SelectedItemsCount != null)
+                SelectedItemsCount.Header = $"{selectedCount} asset{suffix} selected";
 
-			if (ReplaceAsset != null)
-				ReplaceAsset.Visibility = (selectedCount == 1 ? Visibility.Visible : Visibility.Collapsed);
-			if (ReplaceAssets != null)
-				ReplaceAssets.Visibility = (selectedCount > 1 ? Visibility.Visible : Visibility.Collapsed);
+            if (ReplaceAsset != null)
+                ReplaceAsset.Visibility = (selectedCount == 1 ? Visibility.Visible : Visibility.Collapsed);
+            if (ReplaceAssets != null)
+                ReplaceAssets.Visibility = (selectedCount > 1 ? Visibility.Visible : Visibility.Collapsed);
 
-			if (CopyPath != null)
-				CopyPath.Header = "Copy path" + (selectedCount > 1 ? "s" : "");
-			if (CopyRef != null)
-				CopyRef.Header = "Copy ref" + (selectedCount > 1 ? "s" : "");
-		}
+            if (CopyPath != null)
+                CopyPath.Header = "Copy path" + (selectedCount > 1 ? "s" : "");
+            if (CopyRef != null)
+                CopyRef.Header = "Copy ref" + (selectedCount > 1 ? "s" : "");
+        }
 
-		private static MenuItem? GetMenuItem(string menuName, string menuItemName) {
-			if (App.Current.FindResource(menuName) is ContextMenu contextMenu) {
-				foreach (var Item in contextMenu.Items) {
-					if (Item is MenuItem menuItem) {
-						if (menuItem.Name == menuItemName) {
-							return menuItem;
-						}
-					}
-				}
-			}
-
-			return null;
-		}
-	}
+        private static MenuItem? GetMenuItem(string menuName, string menuItemName)
+        {
+            if (App.Current.FindResource(menuName) is ContextMenu contextMenu)
+            {
+                foreach (var Item in contextMenu.Items)
+                {
+                    if (Item is MenuItem menuItem)
+                    {
+                        if (menuItem.Name == menuItemName)
+                        {
+                            return menuItem;
+                        }
+                    }
+                }
+            }
+            return null;
+        }
+    }
 }
