@@ -253,7 +253,7 @@ namespace ModdingTool.Utils
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
             using var br = new BinaryReader(fs);
             byte[] sig = br.ReadBytes(4);
-            fs.Seek(0, SeekOrigin.Begin); // Reset stream position
+            fs.Seek(0, SeekOrigin.Begin);
 
             if (sig[0] == (byte)'S' && sig[1] == (byte)'T' && sig[2] == (byte)'G')
             {
@@ -264,7 +264,7 @@ namespace ModdingTool.Utils
             }
             else if (sig[0] == (byte)'D' && sig[1] == (byte)'A' && sig[2] == (byte)'T' && sig[3] == (byte)'1')
             {
-                // OLD DAT1
+                //no stg
                 var cfg = new DAT1.Files.Config_I30(br);
                 return cfg.ContentSection.Data;
             }
