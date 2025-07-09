@@ -1335,10 +1335,16 @@ namespace ModdingTool {
 			win.Show();
 		}
 
-		#endregion
-		#region folders view
+        private void Tools_TextureViewer_Click(object sender, RoutedEventArgs e)
+        {
+            var viewer = new ModdingTool.Windows.TextureViewerWindow();
+            viewer.ShowDialog();
+        }
 
-		private void Folders_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) {
+        #endregion
+        #region folders view
+
+        private void Folders_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e) {
 			if (Folders.SelectedItem == null) return;
 
 			var path = GetSelectedFolderPath();
