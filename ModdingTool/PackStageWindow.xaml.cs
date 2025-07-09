@@ -18,6 +18,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
 using MahApps.Metro.Controls;
+using ModdingTool.Windows;
 
 namespace ModdingTool {
 	public partial class PackStageWindow: MetroWindow {
@@ -250,7 +251,7 @@ namespace ModdingTool {
 					ef.Write(data, 0, data.Length);
 				}
 			} catch {
-				MessageBox.Show($"Error: failed to write '{stageFileName}'!", "Error", MessageBoxButton.OK);
+				new CustomMessageBox($"Error: failed to write '{stageFileName}'!", "Error").ShowDialog();
 				return;
 			}
 

@@ -7,6 +7,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using ModdingTool.Utils;
+using ModdingTool.Windows;
 
 namespace ModdingTool.Windows
 {
@@ -119,13 +120,13 @@ namespace ModdingTool.Windows
                     }
                     else
                     {
-                        System.Windows.MessageBox.Show("Failed to find TOC loading method.", "Error");
+                        new CustomMessageBox("Failed to find TOC loading method.", "Error").ShowDialog();
                     }
                     this.Close();
                 }
                 catch (System.Exception ex)
                 {
-                    System.Windows.MessageBox.Show($"Failed to load TOC: {ex.Message}", "Error");
+                    new CustomMessageBox($"Failed to load TOC: {ex.Message}", "Error").ShowDialog();
                 }
             }
         }

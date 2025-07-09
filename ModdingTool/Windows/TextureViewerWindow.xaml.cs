@@ -145,7 +145,6 @@ namespace ModdingTool.Windows
                 {
                     string dir = Path.GetDirectoryName(selectedPath);
                     string baseName = Path.GetFileNameWithoutExtension(selectedPath);
-                    // If user picked .hd.texture, baseName will be 'name.hd', so also check for .texture
                     string hdPath = Path.Combine(dir, baseName + ".hd.texture");
                     string sdBaseName = baseName.EndsWith(".hd", StringComparison.OrdinalIgnoreCase) ? baseName.Substring(0, baseName.Length - 3) : baseName;
                     string sdPath = Path.Combine(dir, sdBaseName + ".texture");
@@ -154,13 +153,8 @@ namespace ModdingTool.Windows
 
                     if (hdExists && sdExists)
                     {
-                        var result = MessageBox.Show(
-                            $"Both SD and HD textures were found:\nSD: {Path.GetFileName(sdPath)}\nHD: {Path.GetFileName(hdPath)}\n\nDo you want to view the HD texture instead?\n(Yes = HD, No = SD)",
-                            "SD/HD Texture Found",
-                            MessageBoxButton.YesNo,
-                            MessageBoxImage.Question
-                        );
-                        if (result == MessageBoxResult.Yes)
+                        new CustomMessageBox($"Both SD and HD textures were found:\nSD: {Path.GetFileName(sdPath)}\nHD: {Path.GetFileName(hdPath)}\n\nDo you want to view the HD texture instead?\n(Yes = HD, No = SD)", "SD/HD Texture Found").ShowDialog();
+                        if (MessageBox.Show("Do you want to view the HD texture instead?", "SD/HD Texture Found", MessageBoxButton.YesNo) == MessageBoxResult.Yes)
                         {
                             LoadTexture(hdPath);
                             return;
@@ -185,7 +179,7 @@ namespace ModdingTool.Windows
                 LoadTexture(selectedPath);
             }
         }
-
+//please never leave ai comments ever again
         private void LoadTexture(string path)
         {
             string ext = Path.GetExtension(path).ToLowerInvariant();
@@ -198,15 +192,9 @@ namespace ModdingTool.Windows
                     typeLabel = "SD";
             }
 
-            // ✅ Block unsupported formats like .texture
             if (ext != ".dds" && ext != ".tga" && ext != ".texture")
             {
-                MessageBox.Show(
-                    "This viewer currently supports only .dds and .tga files.",
-                    "Unsupported Format",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Information
-                );
+                new CustomMessageBox("This viewer currently supports only .dds and .tga files.", "Unsupported Format").ShowDialog();
                 return;
             }
 
@@ -240,7 +228,7 @@ namespace ModdingTool.Windows
 
                     if (ddsData.Length < 4 || ddsData[0] != 0x44 || ddsData[1] != 0x44 || ddsData[2] != 0x53 || ddsData[3] != 0x20)
                     {
-                        MessageBox.Show("This file does not contain a valid DDS header.", "Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        new CustomMessageBox("This file does not contain a valid DDS header.", "Load Error").ShowDialog();
                         return;
                     }
 
@@ -276,12 +264,7 @@ namespace ModdingTool.Windows
             }
             catch (Exception ex)
             {
-                MessageBox.Show(
-                    $"This file could not be loaded:\n\n{ex.Message}",
-                    "Load Error",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning
-                );
+                new CustomMessageBox($"This file could not be loaded:\n\n{ex.Message}", "Load Error").ShowDialog();
             }
         }
 
@@ -308,11 +291,7 @@ namespace ModdingTool.Windows
 
         private void OnImportPng_Click(object sender, RoutedEventArgs e)
         {
-            MessageBox.Show(
-                "Import/replace functionality is not yet implemented.",
-                "Texture Viewer",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
+            new CustomMessageBox("Import/replace functionality is not yet implemented.", "Texture Viewer").ShowDialog();
         }
     }
 }

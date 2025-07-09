@@ -114,22 +114,24 @@
                 </Grid>
                 <GridSplitter Background="Transparent" Grid.Column="1" Margin="0" Width="3" VerticalAlignment="Stretch" HorizontalAlignment="Center" />
                 <Grid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                    <DataGrid x:Name="AssetsList" RowHeaderWidth="0" GridLinesVisibility="None" Background="White" AutoGenerateColumns="false" CanUserAddRows="false" CanUserDeleteRows="false" BorderThickness="0" ContextMenuOpening="AssetsList_ContextMenuOpening" HorizontalScrollBarVisibility="Hidden">
+                    <DataGrid x:Name="AssetsList"
+                              RowHeaderWidth="0"
+                              GridLinesVisibility="None"
+                              Background="White"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              CanUserDeleteRows="False"
+                              BorderThickness="0"
+                              SelectionMode="Extended"
+                              ContextMenuOpening="AssetsList_ContextMenuOpening"
+                              PreviewMouseRightButtonDown="AssetsList_PreviewMouseRightButtonDown"
+                              HorizontalScrollBarVisibility="Hidden">
                         <DataGrid.Columns>
                             <DataGridTextColumn Header="File Name" Width="*" Binding="{Binding Name}" IsReadOnly="True" />
                             <DataGridTextColumn Header="Size" Width="80" Binding="{Binding SizeFormatted}" SortMemberPath="Size" IsReadOnly="True" />
                             <DataGridTextColumn Header="Span" Width="55" Binding="{Binding Span}" IsReadOnly="True" />
                             <DataGridTextColumn Header="Archive" Width="100" Binding="{Binding Archive}" IsReadOnly="True" />
                         </DataGrid.Columns>
-                        <DataGrid.ContextMenu>
-                            <ContextMenu>
-                                <MenuItem Header="Extract all..." Click="FoldersMenu_ExtractAssets_Click" />
-                                <MenuItem Header="Extract to stage..." Click="FoldersMenu_ExtractAssetsToStage_Click" />
-                                <Separator/>
-                                <MenuItem Header="Copy path" Click="FoldersMenu_CopyPath_Click" />
-                                <MenuItem Header="Edit Config..." Command="{x:Static local:AssetsListContextMenu.EditConfigCommand}" />
-                            </ContextMenu>
-                        </DataGrid.ContextMenu>
                     </DataGrid>
                 </Grid>
             </Grid>
