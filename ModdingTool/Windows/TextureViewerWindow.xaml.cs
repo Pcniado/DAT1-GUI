@@ -8,10 +8,11 @@ using Pfim;
 using OverstrikeShared.STG.Files;
 using DAT1.Files;
 using System.Windows.Input;
+using MahApps.Metro.Controls;
 
 namespace ModdingTool.Windows
 {
-    public partial class TextureViewerWindow : Window
+    public partial class TextureViewerWindow : MetroWindow
     {
         private string currentTexturePath = "";
 
