@@ -399,7 +399,43 @@ namespace ModdingTool.Utils
                 }
                 catch (Exception ex)
                 {
-                    threadEx = ex;
+                    // extract Python error details
+                    string errorMsg = ex.Message;
+                    string errorType = ex.GetType().Name;
+                    int? line = null;
+                    int? column = null;
+                    string codeLine = null;
+                    try
+                    {
+                        var pyEx = ex.GetType().GetProperty("Line")?.GetValue(ex);
+                        if (pyEx != null) line = (int)pyEx;
+                        var pyCol = ex.GetType().GetProperty("Column")?.GetValue(ex);
+                        if (pyCol != null) column = (int)pyCol;
+                        var pyLine = ex.GetType().GetProperty("SourceCode")?.GetValue(ex) as string;
+                        if (pyLine != null)
+                        {
+                            var lines = pyLine.Split('\n');
+                            if (line.HasValue && line.Value > 0 && line.Value <= lines.Length)
+                                codeLine = lines[line.Value - 1];
+                        }
+                    }
+                    catch { }
+                    string details;
+                    if (errorType.Contains("UnboundNameException") && errorMsg.Contains("assets"))
+                    {
+                        details = "'assets' is not defined. The 'assets' helper is only available when a TOC or project is loaded. Please load a TOC or project before using 'assets' in your script.";
+                    }
+                    else
+                    {
+                        details = $"{errorType}: {errorMsg}";
+                    }
+                    if (line.HasValue)
+                        details += $"\nLine: {line}";
+                    if (column.HasValue)
+                        details += $", Column: {column}";
+                    if (!string.IsNullOrEmpty(codeLine))
+                        details += $"\nCode: {codeLine.Trim()}";
+                    threadEx = new Exception(details, ex);
                 }
                 finally
                 {
