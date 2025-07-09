@@ -128,20 +128,38 @@ namespace ModdingTool.Windows
                     FileName = exePath,
                     Arguments = $"\"{wemPath}\" -o \"{wavPath}\"",
                     CreateNoWindow = true,
-                    UseShellExecute = false
+                    UseShellExecute = false,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
                 };
-#if DEBUG
-                new CustomMessageBox($"Running: {exePath} {psi.Arguments}", "DEBUG").ShowDialog();
-#endif
-                var proc = Process.Start(psi);
-                proc.WaitForExit();
-                return File.Exists(wavPath);
+                string stdOut = string.Empty;
+                string stdErr = string.Empty;
+                int exitCode = -1;
+                try
+                {
+                    using (var proc = Process.Start(psi))
+                    {
+                        stdOut = proc.StandardOutput.ReadToEnd();
+                        stdErr = proc.StandardError.ReadToEnd();
+                        proc.WaitForExit();
+                        exitCode = proc.ExitCode;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    new CustomMessageBox($"Failed to start vgmstream-cli.exe:\n{ex}", "Error").ShowDialog();
+                    return false;
+                }
+                if (!File.Exists(wavPath))
+                {
+                    new CustomMessageBox($"vgmstream-cli.exe failed.\nExit code: {exitCode}\nStdOut: {stdOut}\nStdErr: {stdErr}", "Error").ShowDialog();
+                    return false;
+                }
+                return true;
             }
             catch (Exception ex)
             {
-#if DEBUG
-                new CustomMessageBox($"Exception in RunVgmstream: {ex}", "DEBUG").ShowDialog();
-#endif
+                new CustomMessageBox($"Exception in RunVgmstream: {ex}", "Error").ShowDialog();
                 return false;
             }
         }
