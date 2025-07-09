@@ -14,7 +14,7 @@
 // - assets.extract_selected_assets_by_paths(paths, output_dir): Extracts only the assets whose paths are in the list.
 // - config.load_config(path): Loads a .config file and returns a Python dict (JSON).
 // - config.save_config(path, config_obj): Converts a config (JSON) to a .config file.
-// - add_to_stage(config_path): Adds a file file to the current stage.
+// - add_to_stage(file_path, relpath, span=0, show_message_box=True): Adds or replaces any file in the stage. file_path = path to file, relpath = relative path in archive, span = span index (default 0 for configs). show_message_box = if False, disables popup notifications.
 //
 // === SCRIPTING TIPS ===
 // - Always normalize paths for matching.
@@ -91,7 +91,7 @@ namespace ModdingTool.Windows
                 "# - assets.extract_selected_assets_by_paths(paths, output_dir): Extracts only the assets whose paths are in the list.\n" +
                 "# - config.load_config(path): Loads a .config file and returns a (JSON).\n" +
                 "# - config.save_config(path, config_obj): Converts a config (JSON) to a .config file.\n" +
-                "# - add_to_stage(file_path, relpath, span=0): Adds or replaces any file in the stage. file_path = path to file, relpath = relative path in archive, span = span index (default 0 for configs).\n" +
+                "# - add_to_stage(file_path, relpath, span=0, show_message_box=True): Adds or replaces any file in the stage. file_path = path to file, relpath = relative path in archive, span = span index (default 0 for configs). show_message_box = if False, disables popup notifications.\n" +
                 "#\n" +
                 "# === SCRIPTING TIPS ===\n" +
                 "# - Always normalize paths for matching.\n" +
@@ -111,6 +111,7 @@ namespace ModdingTool.Windows
                 "# 3. Add or replace any file in the stage (config, texture, etc):\n" +
                 "#   add_to_stage(\"myfile.config\", \"ui/configs/myfile.config\")\n" +
                 "#   add_to_stage(\"mytex.dds\", \"ui/textures/mytex.dds\", 1)\n" +
+                "#   add_to_stage(\"myfile.config\", \"ui/configs/myfile.config\", 0, False)  # disables message box\n" +
                 "#\n" +
                 "# 4. Extract all assets under a folder:\n" +
                 "#   root = 'ui/loaded/authored/'\n" +
@@ -122,7 +123,7 @@ namespace ModdingTool.Windows
                 "#   else:\n" +
                 "#       result = \"No output folder selected.\"\n" +
                 "#\n" +
-                "# === NOTE: add_to_stage(file_path, relpath, span=0) is available for all file types.\n" +
+                "# === NOTE: add_to_stage(file_path, relpath, span=0, show_message_box=True) is available for all file types.\n" +
                 "#\n" +
                 "# === Your script below ===\n";
         }

@@ -298,7 +298,7 @@ namespace ModdingTool.Utils
 
     public class ScriptStageHelper
     {
-        public void add_to_stage(string filePath, string relpath, int span = 0)
+        public void add_to_stage(string filePath, string relpath, int span = 0, bool showMessageBox = true)
         {
             System.Windows.Application.Current.Dispatcher.Invoke(() =>
             {
@@ -307,9 +307,12 @@ namespace ModdingTool.Utils
                     var mainWindow = System.Windows.Application.Current.Windows.OfType<ModdingTool.MainWindow>().FirstOrDefault();
                     if (mainWindow == null)
                     {
-                        var msgBox = new Windows.CustomMessageBox("Main window not found. Cannot add to stage.", "Add to Stage", false);
-                        msgBox.Owner = System.Windows.Application.Current.MainWindow;
-                        msgBox.ShowDialog();
+                        if (showMessageBox)
+                        {
+                            var msgBox = new Windows.CustomMessageBox("Main window not found. Cannot add to stage.", "Add to Stage", false);
+                            msgBox.Owner = System.Windows.Application.Current.MainWindow;
+                            msgBox.ShowDialog();
+                        }
                         return;
                     }
                     var fileName = System.IO.Path.GetFileName(filePath);
@@ -325,23 +328,32 @@ namespace ModdingTool.Utils
                     var replacedAssetsDict = dictObj as Dictionary<Asset, string>;
                     if (replacedAssetsDict == null)
                     {
-                        var msgBox = new Windows.CustomMessageBox("Could not access replaced assets dictionary.", "Add to Stage", false);
-                        msgBox.Owner = System.Windows.Application.Current.MainWindow;
-                        msgBox.ShowDialog();
+                        if (showMessageBox)
+                        {
+                            var msgBox = new Windows.CustomMessageBox("Could not access replaced assets dictionary.", "Add to Stage", false);
+                            msgBox.Owner = System.Windows.Application.Current.MainWindow;
+                            msgBox.ShowDialog();
+                        }
                         return;
                     }
                     replacedAssetsDict[asset] = filePath;
                     mainWindow.GetType().GetMethod("SetProjectDirty", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                         ?.Invoke(mainWindow, new object[] { true });
-                    var msgBox2 = new Windows.CustomMessageBox($"Added {fileName} to stage as {relpath} (span {span}).", "Add to Stage", false);
-                    msgBox2.Owner = System.Windows.Application.Current.MainWindow;
-                    msgBox2.ShowDialog();
+                    if (showMessageBox)
+                    {
+                        var msgBox2 = new Windows.CustomMessageBox($"Added {fileName} to stage as {relpath} (span {span}).", "Add to Stage", false);
+                        msgBox2.Owner = System.Windows.Application.Current.MainWindow;
+                        msgBox2.ShowDialog();
+                    }
                 }
                 catch (Exception ex)
                 {
-                    var msgBox = new Windows.CustomMessageBox($"Failed to add to stage: {ex.Message}", "Add to Stage", false);
-                    msgBox.Owner = System.Windows.Application.Current.MainWindow;
-                    msgBox.ShowDialog();
+                    if (showMessageBox)
+                    {
+                        var msgBox = new Windows.CustomMessageBox($"Failed to add to stage: {ex.Message}", "Add to Stage", false);
+                        msgBox.Owner = System.Windows.Application.Current.MainWindow;
+                        msgBox.ShowDialog();
+                    }
                 }
             });
         }
@@ -374,7 +386,7 @@ namespace ModdingTool.Utils
                     _scope.SetVariable("fileinfo", new FileInfoHelper());
                     _scope.SetVariable("ui", new ScriptUIHelper());
                     _scope.SetVariable("config", new ScriptConfigHelper());
-                    _scope.SetVariable("add_to_stage", new Action<string, string, int>(new ScriptStageHelper().add_to_stage));
+                    _scope.SetVariable("add_to_stage", new Action<string, string, int, bool>(new ScriptStageHelper().add_to_stage));
                     if (selectedAssets != null && toc != null)
                         _scope.SetVariable("assets", new ScriptAssetHelper(selectedAssets, toc));
                     _engine.Execute(script, _scope);
