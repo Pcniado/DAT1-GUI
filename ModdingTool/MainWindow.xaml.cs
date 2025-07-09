@@ -659,8 +659,9 @@ namespace ModdingTool {
 					}
 				};
 
+				// niado: replace old traverse call with lazy root population
 				Folders.Items.Clear();
-				Traverse(root, Folders.Items);
+				PopulateRootFolders(root);
 
 
 				if (_pendingReplacedAssets != null)
@@ -779,6 +780,7 @@ namespace ModdingTool {
 		}
 
 		private void JumpTo(string path) {
+			SearchAndReveal(path);
 			string folderToOpen = null;
 			bool openAssetById = false;
 			byte assetSpanToOpen = 0;
@@ -1933,5 +1935,65 @@ namespace ModdingTool {
                 win.Show();
             }
         }
+
+		// niado: lazy loading for folders treeview
+		private void PopulateRootFolders(TreeNode root)
+		{
+			Folders.Items.Clear();
+			foreach (var key in root.Children.Keys.OrderBy(x => x))
+			{
+				var item = new TreeViewItem { Header = key, Tag = root.Children[key] };
+				//add dummy for expand arrow
+				if (((TreeNode)item.Tag).Children.Count > 0)
+					item.Items.Add(null);
+				item.Expanded += Folder_Expanded;
+				Folders.Items.Add(item);
+			}
+		}
+
+		private void Folder_Expanded(object sender, RoutedEventArgs e)
+		{
+			var item = (TreeViewItem)sender;
+			if (item.Items.Count == 1 && item.Items[0] == null)
+			{
+				item.Items.Clear();
+				var node = (TreeNode)item.Tag;
+				foreach (var key in node.Children.Keys.OrderBy(x => x))
+				{
+					var child = new TreeViewItem { Header = key, Tag = node.Children[key] };
+					//add dummy for further expansion
+					if (node.Children[key].Children.Count > 0)
+						child.Items.Add(null);
+					child.Expanded += Folder_Expanded;
+					item.Items.Add(child);
+				}
+			}
+		}
+
+		private void SearchAndReveal(string assetNameOrPath)
+		{
+			var asset = _assets.FirstOrDefault(a => a.Name == assetNameOrPath || a.FullPath == assetNameOrPath);
+			if (asset == null) return;
+			var path = asset.FullPath ?? asset.Name;
+			var pathParts = path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+			ItemCollection currentItems = Folders.Items;
+			TreeViewItem currentItem = null;
+			foreach (var part in pathParts)
+			{
+				currentItem = currentItems
+					.OfType<TreeViewItem>()
+					.FirstOrDefault(i => (string)i.Header == part);
+				if (currentItem == null) return;
+				if (!currentItem.IsExpanded)
+					currentItem.IsExpanded = true; 
+				// trhis forces UI to process expansion
+				System.Windows.Threading.DispatcherFrame frame = new();
+				currentItem.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() => frame.Continue = false));
+				System.Windows.Threading.Dispatcher.PushFrame(frame);
+				currentItems = currentItem.Items;
+			}
+			if (currentItem != null)
+				currentItem.IsSelected = true;
+		}
 	}
 }
