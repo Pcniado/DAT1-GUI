@@ -61,6 +61,15 @@ namespace ModdingTool {
 		private List<string> _recentProjectFolders = new();
 		private const int MaxRecentProjects = 5;
 
+		private Dictionary<uint, string> _wemEventNames = new(); // Maps WEM file numbers to event names
+		private const string WemEventNamesFileName = "hashes_i30_wems.txt";
+		private const string WemEventNamesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30_wems.txt";
+
+		private Dictionary<uint, (string Soundbank, string EventName)> _wemEventInfo = new(); // WEM ID → (soundbank, event name)
+		private Dictionary<string, List<uint>> _soundbankWems = new(); // soundbank → list of wem ids
+		private const string AssetNamesFileName = "hashes_i30.txt";
+		private const string AssetNamesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
+
 		public MainWindow() {
 			InitializeComponent();
 			this.Activated += OnActivated;
@@ -281,6 +290,80 @@ namespace ModdingTool {
 
         private void LoadTOC(string path)
         {
+            string wemHashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WemEventNamesFileName);
+            bool wemNeedDownload = !File.Exists(wemHashesTarget);
+            if (wemNeedDownload)
+            {
+                Dispatcher.Invoke(() => {
+                    OverlayHeaderLabel.Text = $"Downloading {WemEventNamesFileName}...";
+                    OverlayOperationLabel.Text = WemEventNamesUrl;
+                });
+                using (var client = new System.Net.Http.HttpClient())
+                using (var response = client.GetAsync(WemEventNamesUrl, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult())
+                {
+                    response.EnsureSuccessStatusCode();
+                    var contentLength = response.Content.Headers.ContentLength;
+                    using (var stream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
+                    using (var fs = new FileStream(wemHashesTarget, FileMode.Create, FileAccess.Write, FileShare.None))
+                    {
+                        var buffer = new byte[8192];
+                        long totalRead = 0;
+                        int read;
+                        int lastKb = 0;
+                        int totalKb = contentLength.HasValue ? (int)(contentLength.Value / 1024) : -1;
+                        while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            fs.Write(buffer, 0, read);
+                            totalRead += read;
+                            int currentKb = (int)(totalRead / 1024);
+                            if (currentKb != lastKb || read == 0)
+                            {
+                                lastKb = currentKb;
+                                Dispatcher.Invoke(() => {
+                                    if (totalKb > 0)
+                                    {
+                                        OverlayHeaderLabel.Text = $"Downloading {WemEventNamesFileName}... ({currentKb}/{totalKb} KB)";
+                                    }
+                                    else
+                                    {
+                                        OverlayHeaderLabel.Text = $"Downloading {WemEventNamesFileName}... ({currentKb} KB)";
+                                    }
+                                    OverlayOperationLabel.Text = WemEventNamesUrl;
+                                });
+                            }
+                        }
+                    }
+                }
+                // fix for the file not being released
+                bool fileReady = false;
+                for (int attempt = 0; attempt < 10; attempt++)
+                {
+                    try
+                    {
+                        using (var sr = new FileStream(wemHashesTarget, FileMode.Open, FileAccess.Read, FileShare.Read))
+                        {
+                            fileReady = true;
+                        }
+                        break;
+                    }
+                    catch (IOException)
+                    {
+                        Thread.Sleep(100);
+                    }
+                }
+                if (!fileReady)
+                {
+                    Dispatcher.Invoke(() => {
+                        OverlayHeaderLabel.Text = $"Failed to access {WemEventNamesFileName} after download.";
+                        OverlayOperationLabel.Text = "-";
+                    });
+                    return;
+                }
+            }
+
+            DownloadIfMissing(AssetNamesFileName, AssetNamesUrl);
+            LoadWemEventInfo();
+
             Dispatcher.Invoke(() => {
                 OverlayHeaderLabel.Text = "Loading 'toc'...";
                 OverlayOperationLabel.Text = "-";
@@ -612,8 +695,14 @@ namespace ModdingTool {
 			// tree: other assets
 
 			var unknown = root.Children["[UNKNOWN]"];
-			var wems = root.Children["[WEM]"];
+			var wemsRoot = root.Children["[WEM]"];
 			
+			foreach (var soundbank in _soundbankWems.Keys)
+			{
+				if (!wemsRoot.Children.ContainsKey(soundbank))
+					wemsRoot.Children[soundbank] = new TreeNode();
+			}
+
 			for (var i = 0; i < _assets.Count; ++i) {
 				var asset = _assets[i];
 				if (asset.Name != "") continue;
@@ -622,9 +711,17 @@ namespace ModdingTool {
 				var isWem = ((assetId & 0xFFFFFFFF00000000) == 0xE000000000000000);
 
 				if (isWem) {
-					var wemNumber = assetId & 0xFFFFFFFF;
-					asset.Name = $"{wemNumber}.wem";
-					AddPath($"[WEM]\\{asset.Archive}", i);
+					var wemNumber = (uint)(assetId & 0xFFFFFFFF);
+					if (_wemEventInfo.TryGetValue(wemNumber, out var wemInfo))
+					{
+						asset.Name = $"{wemInfo.EventName}.wem";
+						AddPath($"[WEM]\\{wemInfo.Soundbank}", i);
+					}
+					else
+					{
+						asset.Name = $"{wemNumber}.wem | [{asset.Archive}]";
+						AddPath($"[WEM]\\{asset.Archive}", i);
+					}
 				} else {
 					asset.Name = $"{assetId:X016}";
 					AddPath($"[UNKNOWN]\\{asset.Archive}", i);
@@ -1479,29 +1576,34 @@ namespace ModdingTool {
 				{
 					exportItem.Visibility = Visibility.Collapsed;
 				}
-			} //this is a MESS fucking fix this garbage
+			}
 			AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
 			if (selected == 1 && AssetsList.SelectedItem is Asset asset) {
 				string assetName = asset.Name;
-				bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
-				if (isTexture) {
-					AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
-					AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
-				} else {
+				// Always show PlayWem/ExportWemToWav for .wem files (event or id based)
+				bool isWem = assetName.EndsWith(".wem") || assetName.Contains(".wem | ");
+				if (isWem) {
+					AssetsListContextMenu.PlayWem.Visibility = Visibility.Visible;
+					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Visible;
 					AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
 					AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
+				} else {
+					AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
+					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
+					// Only show texture options for non-WEMs
+					bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
+					if (isTexture) {
+						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
+						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
+					} else {
+						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
+						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
+					}
 				}
 				if (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false)
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
 				else
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
-				if (asset.Name?.EndsWith(".wem", StringComparison.OrdinalIgnoreCase) ?? false) {
-					AssetsListContextMenu.PlayWem.Visibility = Visibility.Visible;
-					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Visible;
-				} else {
-					AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
-					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
-				}
 			} else {
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
 				AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
@@ -2294,6 +2396,247 @@ namespace ModdingTool {
 			}
 			if (currentItem != null)
 				currentItem.IsSelected = true;
+		}
+
+		private void DownloadIfMissing(string fileName, string url)
+		{
+			string filePath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, fileName);
+			if (!System.IO.File.Exists(filePath))
+				filePath = System.IO.Path.Combine("ModdingTool", fileName);
+			if (!System.IO.File.Exists(filePath))
+			{
+				try
+				{
+					Dispatcher.Invoke(() => {
+						OverlayHeaderLabel.Text = $"Downloading {fileName}...";
+						OverlayOperationLabel.Text = url;
+					});
+					using (var client = new System.Net.Http.HttpClient())
+					using (var response = client.GetAsync(url, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult())
+					{
+						response.EnsureSuccessStatusCode();
+						var contentLength = response.Content.Headers.ContentLength;
+						using (var stream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
+						using (var fs = new System.IO.FileStream(filePath, System.IO.FileMode.Create, System.IO.FileAccess.Write, System.IO.FileShare.None))
+						{
+							var buffer = new byte[8192];
+							long totalRead = 0;
+							int read;
+							int lastKb = 0;
+							int totalKb = contentLength.HasValue ? (int)(contentLength.Value / 1024) : -1;
+							while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+							{
+								fs.Write(buffer, 0, read);
+								totalRead += read;
+								int currentKb = (int)(totalRead / 1024);
+								if (currentKb != lastKb || read == 0)
+								{
+									lastKb = currentKb;
+									Dispatcher.Invoke(() => {
+										if (totalKb > 0)
+										{
+											OverlayHeaderLabel.Text = $"Downloading {fileName}... ({currentKb}/{totalKb} KB)";
+										}
+										else
+										{
+											OverlayHeaderLabel.Text = $"Downloading {fileName}... ({currentKb} KB)";
+										}
+										OverlayOperationLabel.Text = url;
+									});
+								}
+							}
+						}
+					}
+					// fix for the file not being released
+					bool fileReady = false;
+					for (int attempt = 0; attempt < 10; attempt++)
+					{
+						try
+						{
+							using (var sr = new System.IO.FileStream(filePath, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.Read))
+							{
+								fileReady = true;
+							}
+							break;
+						}
+						catch (System.IO.IOException)
+						{
+							System.Threading.Thread.Sleep(100);
+						}
+					}
+					if (!fileReady)
+					{
+						Dispatcher.Invoke(() => {
+							OverlayHeaderLabel.Text = $"Failed to access {fileName} after download.";
+							OverlayOperationLabel.Text = "-";
+						});
+					}
+				}
+				catch (Exception ex)
+				{
+					Dispatcher.Invoke(() => {
+						OverlayHeaderLabel.Text = $"Failed to download {fileName}: {ex.Message}";
+						OverlayOperationLabel.Text = "-";
+					});
+				}
+			}
+		}
+
+		private void LoadWemEventInfo()
+		{
+			_wemEventInfo.Clear();
+			_soundbankWems.Clear();
+			string wemHashesFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, WemEventNamesFileName);
+			if (!File.Exists(wemHashesFile))
+				wemHashesFile = Path.Combine("ModdingTool", WemEventNamesFileName);
+			if (!File.Exists(wemHashesFile))
+			{
+				try
+				{
+					Dispatcher.Invoke(() => {
+						OverlayHeaderLabel.Text = $"Downloading {WemEventNamesFileName}...";
+						OverlayOperationLabel.Text = WemEventNamesUrl;
+					});
+					using (var client = new System.Net.Http.HttpClient())
+					using (var response = client.GetAsync(WemEventNamesUrl, System.Net.Http.HttpCompletionOption.ResponseHeadersRead).GetAwaiter().GetResult())
+					{
+						response.EnsureSuccessStatusCode();
+						var contentLength = response.Content.Headers.ContentLength;
+						using (var stream = response.Content.ReadAsStreamAsync().GetAwaiter().GetResult())
+						using (var fs = new FileStream(wemHashesFile, FileMode.Create, FileAccess.Write, FileShare.None))
+						{
+							var buffer = new byte[8192];
+							long totalRead = 0;
+							int read;
+							int lastKb = 0;
+							int totalKb = contentLength.HasValue ? (int)(contentLength.Value / 1024) : -1;
+							while ((read = stream.Read(buffer, 0, buffer.Length)) > 0)
+							{
+								fs.Write(buffer, 0, read);
+								totalRead += read;
+								int currentKb = (int)(totalRead / 1024);
+								if (currentKb != lastKb || read == 0)
+								{
+									lastKb = currentKb;
+									Dispatcher.Invoke(() => {
+										if (totalKb > 0)
+										{
+											OverlayHeaderLabel.Text = $"Downloading {WemEventNamesFileName}... ({currentKb}/{totalKb} KB)";
+										}
+										else
+										{
+											OverlayHeaderLabel.Text = $"Downloading {WemEventNamesFileName}... ({currentKb} KB)";
+										}
+										OverlayOperationLabel.Text = WemEventNamesUrl;
+									});
+								}
+							}
+						}
+					}
+					// fix for the file not being released
+					bool fileReady = false;
+					for (int attempt = 0; attempt < 10; attempt++)
+					{
+						try
+						{
+							using (var sr = new FileStream(wemHashesFile, FileMode.Open, FileAccess.Read, FileShare.Read))
+							{
+								fileReady = true;
+							}
+							break;
+						}
+						catch (IOException)
+						{
+							Thread.Sleep(100);
+						}
+					}
+					if (!fileReady)
+					{
+						Dispatcher.Invoke(() => {
+							OverlayHeaderLabel.Text = $"Failed to access {WemEventNamesFileName} after download.";
+							OverlayOperationLabel.Text = "-";
+						});
+						return;
+					}
+				}
+				catch (Exception ex)
+				{
+					Dispatcher.Invoke(() => {
+						OverlayHeaderLabel.Text = $"Failed to download {WemEventNamesFileName}: {ex.Message}";
+						OverlayOperationLabel.Text = "-";
+					});
+					return;
+				}
+			}
+			// --- Parse hashes_i30_wems.txt with progress overlay ---
+			_wemEventInfo.Clear();
+			_soundbankWems.Clear();
+			string currentSoundbank = null;
+			int wemProgress = 0;
+			int wemTotal = 0;
+			try
+			{
+				wemTotal = File.ReadLines(wemHashesFile).Count();
+			}
+			catch { }
+			foreach (var line in File.ReadLines(wemHashesFile))
+			{
+				var trimmed = line.Trim();
+				if (string.IsNullOrEmpty(trimmed) || trimmed.StartsWith("#"))
+					continue;
+				if (trimmed.StartsWith("====") && trimmed.EndsWith(".soundbank ===="))
+				{
+					currentSoundbank = trimmed.Substring(4, trimmed.Length - 8).Trim();
+					continue;
+				}
+				if (trimmed.StartsWith("WEM File")) continue;
+				if (trimmed.StartsWith("-") && trimmed.Length > 5) continue;
+				var parts = trimmed.Split('|');
+				if (parts.Length < 2) continue;
+				var wemPart = parts[0].Trim();
+				if (!wemPart.EndsWith(".wem")) continue;
+				var wemNumStr = wemPart.Substring(0, wemPart.Length - 4);
+				if (uint.TryParse(wemNumStr, out var wemNum) && currentSoundbank != null)
+				{
+					var eventName = string.Join(" | ", parts.Skip(1).Select(p => p.Trim()).Where(p => !string.IsNullOrEmpty(p)));
+					_wemEventInfo[wemNum] = (currentSoundbank, eventName);
+					if (!_soundbankWems.ContainsKey(currentSoundbank))
+						_soundbankWems[currentSoundbank] = new List<uint>();
+					_soundbankWems[currentSoundbank].Add(wemNum);
+				}
+				wemProgress++;
+				if (wemProgress % 1000 == 0)
+				{
+					Dispatcher.Invoke(() => {
+						OverlayHeaderLabel.Text = $"Parsing {WemEventNamesFileName}...";
+						OverlayOperationLabel.Text = $"{wemProgress}/{wemTotal} lines";
+					});
+				}
+			}
+			Dispatcher.Invoke(() => {
+				OverlayHeaderLabel.Text = $"Loaded '{WemEventNamesFileName}'";
+				OverlayOperationLabel.Text = "-";
+			});
+		}
+
+		// Fix PlayWem/ExportWemToWav logic to extract correct WEM ID from asset, even if name is EVENT_NAME.wem
+		private uint? GetWemIdFromAsset(Asset asset)
+		{
+			// If asset.Id is a WEM, return its lower 32 bits
+			if ((asset.Id & 0xFFFFFFFF00000000) == 0xE000000000000000)
+				return (uint)(asset.Id & 0xFFFFFFFF);
+			// Otherwise, try to parse from name (for fallback)
+			var name = asset.Name;
+			if (name != null && name.Contains(".wem"))
+			{
+				var parts = name.Split(new[] {'.', '|', ' '}, StringSplitOptions.RemoveEmptyEntries);
+				foreach (var part in parts)
+				{
+					if (uint.TryParse(part, out var wemId))
+						return wemId;
+				}
+			}
+			return null;
 		}
 	}
 }

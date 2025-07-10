@@ -294,6 +294,7 @@ namespace ModdingTool.Windows
 
         protected override void OnClosed(EventArgs e)
         {
+            _output?.Pause();
             base.OnClosed(e);
             if (_isTempWem && !string.IsNullOrEmpty(_tempWem) && System.IO.File.Exists(_tempWem))
             {
