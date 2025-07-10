@@ -38,6 +38,13 @@ See Building page for information on how to build the source code on your machin
 
 See [BUILDING.md](./BUILDING.md) for instructions on how to build the project.
 
+## Acknowledgements
+
+This project uses and builds upon the hard work of others:
+
+- Thanks to the [vgmstream](https://vgmstream.org/) project for their outstanding audio decoding library used to decode `.wem` audio files.
+- Thanks to [Tkachov](https://github.com/Tkachov/Overstrike) for creating the original *Modding Tool*, which this project forks and enhances.
+
 ## License
 
 This project is licensed under [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html).  
