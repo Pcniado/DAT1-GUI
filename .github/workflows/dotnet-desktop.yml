@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Release]
+        configuration: [Release, Debug]
 
     steps:
     - name: Checkout repository
@@ -32,33 +32,36 @@ jobs:
     - name: Publish
       run: dotnet publish --configuration ${{ matrix.configuration }} --output ./publish/${{ matrix.configuration }}
 
-    - name: Download and extract vgmstream (only .exe and .dlls)
+    - name: Download and extract vgmstream
       run: |
         $vgmstreamUrl = "https://github.com/vgmstream/vgmstream/releases/latest/download/vgmstream-win.zip"
         $tempDir = "$(Join-Path $env:RUNNER_TEMP 'vgmstream')"
         $zipPath = "$tempDir\vgmstream.zip"
         $extractDir = "$tempDir\unzipped"
 
+        # download zip
         New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
         Invoke-WebRequest -Uri $vgmstreamUrl -OutFile $zipPath
 
+        # extract zip
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractDir)
 
-
+        # create 3rdparty output folder
         $outputDir = "./publish/${{ matrix.configuration }}/3rdparty"
         New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
 
+        # copy only needed binaries
         Get-ChildItem -Path $extractDir -Include *.exe, *.dll -Recurse | ForEach-Object {
           Copy-Item $_.FullName -Destination $outputDir -Force
         }
 
-
+        # clean up
         Remove-Item $zipPath -Force
       shell: pwsh
 
     - name: Upload published build
       uses: actions/upload-artifact@v4
       with:
-        name: published-app
+        name: DAT1-GUI-${{ matrix.configuration }}
         path: ./publish/${{ matrix.configuration }}
