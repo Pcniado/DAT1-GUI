@@ -8,7 +8,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Media.Imaging;
-
+//this requires a rewrite XAML INCLUDED
 namespace OverstrikeShared.Windows {
 	class ModuleOption {
 		public string Name { get; set; }
@@ -57,7 +57,8 @@ namespace OverstrikeShared.Windows {
 				ApplyCombinationNumber(current);
 				UpdateNumberLabel();
 			} catch (Exception) {
-				MessageBox.Show($"Failed to load '{ModName}'!", "Warning", MessageBoxButton.OK);
+				// TODO: Fix cross-project reference to ModdingTool.Windows.CustomMessageBox
+				// new ModdingTool.Windows.CustomMessageBox($"Failed to load '{ModName}'!", "Warning").ShowDialog();
 				Close();
 			}
 		}

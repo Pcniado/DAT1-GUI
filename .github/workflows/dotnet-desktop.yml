@@ -1,54 +1,67 @@
-name: .NET 7 Desktop CI
+name: Build .NET App with VGMStream
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-
     runs-on: windows-latest
 
-    env:
-      Solution_Name: DAT1-GUI.sln
-      Build_Project_Path: ModdingTool\ModdingTool.csproj
+    strategy:
+      matrix:
+        configuration: [Release, Debug]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup .NET 7 SDK
-      uses: actions/setup-dotnet@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: '7.0.x'
 
-    - name: Restore NuGet packages
-      run: dotnet restore ${{ env.Solution_Name }}
+    - name: Restore dependencies
+      run: dotnet restore
 
-    - name: Build the project (suppress warnings in output)
+    - name: Build
+      run: dotnet build --configuration ${{ matrix.configuration }}
+
+    - name: Publish
+      run: dotnet publish --configuration ${{ matrix.configuration }} --output ./publish/${{ matrix.configuration }}
+
+    - name: Download and extract vgmstream
       run: |
-        dotnet build $env:Solution_Name `
-          --configuration ${{ matrix.configuration }} `
-          --no-restore `
-          -warnasmessage:*
+        $vgmstreamUrl = "https://github.com/vgmstream/vgmstream/releases/latest/download/vgmstream-win.zip"
+        $tempDir = "$(Join-Path $env:RUNNER_TEMP 'vgmstream')"
+        $zipPath = "$tempDir\vgmstream.zip"
+        $extractDir = "$tempDir\unzipped"
 
-    # Optional: Add test step if you have a test project
-    # - name: Run unit tests
-    #   run: dotnet test path\to\tests.csproj --configuration ${{ matrix.configuration }} --no-build
+        # download zip
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+        Invoke-WebRequest -Uri $vgmstreamUrl -OutFile $zipPath
 
-    - name: Publish build output
-      run: |
-        dotnet publish $env:Build_Project_Path `
-          --configuration ${{ matrix.configuration }} `
-          --output ./publish/${{ matrix.configuration }}
+        # extract zip
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractDir)
 
-    - name: Upload published app
+        # create 3rdparty output folder
+        $outputDir = "./publish/${{ matrix.configuration }}/3rdparty"
+        New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+
+        # copy only needed binaries
+        Get-ChildItem -Path $extractDir -Include *.exe, *.dll -Recurse | ForEach-Object {
+          Copy-Item $_.FullName -Destination $outputDir -Force
+        }
+
+        # clean up
+        Remove-Item $zipPath -Force
+      shell: pwsh
+
+    - name: Upload published build
       uses: actions/upload-artifact@v4
       with:
-        name: ModdingTool-${{ matrix.configuration }}
+        name: DAT1-GUI-${{ matrix.configuration }}
         path: ./publish/${{ matrix.configuration }}

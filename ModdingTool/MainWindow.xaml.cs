@@ -72,6 +72,8 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
 
 			UpdateProjectSettingsMenuItemState();
 
@@ -95,6 +97,8 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
 
 			UpdateProjectSettingsMenuItemState();
 
@@ -1343,6 +1347,12 @@ namespace ModdingTool {
             viewer.ShowDialog();
         }
 
+        private void Tools_WemPlayer_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new ModdingTool.Windows.WemPlayerWindow();
+            win.Show();
+        }
+
         #endregion
         #region folders view
 
@@ -1436,20 +1446,75 @@ namespace ModdingTool {
 
 		private void AssetsList_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
 			var selected = AssetsList.SelectedItems.Count;
+			if (AssetsList.ContextMenu == null)
+				AssetsList.ContextMenu = (ContextMenu)FindResource("AssetsListContextMenu");
+			var menu = AssetsList.ContextMenu;
+			MenuItem countItem = null, exportItem = null;
+			foreach (var item in menu.Items)
+			{
+				if (item is MenuItem mi)
+				{
+					if (mi.Name == "SelectedItemsCount") countItem = mi;
+					if (mi.Name == "ExtractAsset") exportItem = mi;
+				}
+			}
+			if (countItem != null) countItem.Header = $"{selected} selected";
+			if (exportItem != null)
+			{
+				if (selected == 1)
+				{
+					exportItem.Header = "Export asset...";
+					exportItem.Visibility = Visibility.Visible;
+				}
+				else if (selected > 1)
+				{
+					exportItem.Header = $"Export {selected} assets...";
+					exportItem.Visibility = Visibility.Visible;
+				}
+				else
+				{
+					exportItem.Visibility = Visibility.Collapsed;
+				}
+			}
 			AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
 			if (selected == 1 && AssetsList.SelectedItem is Asset asset) {
 				if (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false)
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
 				else
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
-				AssetsListContextMenu.ExtractAsset.Visibility = Visibility.Visible;
+				if (asset.Name?.EndsWith(".wem", StringComparison.OrdinalIgnoreCase) ?? false) {
+					AssetsListContextMenu.PlayWem.Visibility = Visibility.Visible;
+					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Visible;
+				} else {
+					AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
+					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
+				}
 			} else {
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
-				AssetsListContextMenu.ExtractAsset.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
 			}
 			AssetsListContextMenu.CopyRef.Visibility = (selected > 0) ? Visibility.Visible : Visibility.Collapsed;
 		}
 
+
+		private void AssetsList_PreviewMouseRightButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			var row = VisualUpwardSearch<DataGridRow>(e.OriginalSource as DependencyObject);
+			if (row != null && !row.IsSelected)
+			{
+				if ((Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) == ModifierKeys.None)
+					AssetsList.SelectedItems.Clear();
+				row.IsSelected = true;
+			}
+		}
+
+		private static T VisualUpwardSearch<T>(DependencyObject source) where T : DependencyObject
+		{
+			while (source != null && !(source is T))
+				source = VisualTreeHelper.GetParent(source);
+			return source as T;
+		}
 
 
 		// command handlers
@@ -1482,6 +1547,63 @@ namespace ModdingTool {
 			AssetsListContextMenuClicked("EditConfig", AssetsList.SelectedItems);
 		}
 
+		private void ContextMenu_PlayWem(object sender, ExecutedRoutedEventArgs e)
+		{
+			//safety checks
+			if (AssetsList.SelectedItems.Count == 1 && AssetsList.SelectedItem is Asset asset && asset.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
+			{
+				var tempDir = System.IO.Path.GetTempPath();
+				var tempFile = System.IO.Path.Combine(tempDir, asset.Name);
+				try
+				{
+					var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+					File.WriteAllBytes(tempFile, bytes);
+				}
+				catch (Exception ex)
+				{
+					new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+					return;
+				}
+				var win = new ModdingTool.Windows.WemPlayerWindow(tempFile, true); 
+				win.Show();
+			}
+		}
+		private void ContextMenu_ExportWemToWav(object sender, ExecutedRoutedEventArgs e)
+		{
+			if (AssetsList.SelectedItems.Count == 1 && AssetsList.SelectedItem is Asset asset && asset.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
+			{
+				string wemPath = asset.FullPath;
+				if (string.IsNullOrEmpty(wemPath) || !File.Exists(wemPath))
+				{
+					var tempDir = System.IO.Path.GetTempPath();
+					var tempFile = System.IO.Path.Combine(tempDir, asset.Name);
+					try
+					{
+						var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						File.WriteAllBytes(tempFile, bytes);
+						wemPath = tempFile;
+					}
+					catch (Exception ex)
+					{
+						new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+						return;
+					}
+				}
+				var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "WAV files (*.wav)|*.wav" };
+				if (dlg.ShowDialog() == true)
+				{
+					if (!WemPlayerWindow.RunVgmstreamStatic(wemPath, dlg.FileName))
+					{
+						new ModdingTool.Windows.CustomMessageBox("Failed to decode WEM file.", "Error").ShowDialog();
+					}
+					else
+					{
+						new ModdingTool.Windows.CustomMessageBox("Conversion complete.", "Info").ShowDialog();
+					}
+				}
+			}
+		}
+
 		// common handler (also used by SearchWindow)
 
 		private void AssetsListContextMenuClicked(string item, System.Collections.IList selectedAssets) {
@@ -1493,6 +1615,53 @@ namespace ModdingTool {
 				case "CopyPath": CopyPath(selectedAssets); break;
 				case "CopyRef": CopyRef(selectedAssets); break;
 				case "EditConfig": EditConfig(selectedAssets); break;
+				case "PlayWem":
+					if (selectedAssets.Count == 1 && selectedAssets[0] is Asset asset1 && asset1.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
+					{
+						// Always extract to temp file
+						var tempDir = System.IO.Path.GetTempPath();
+						var tempFile = System.IO.Path.Combine(tempDir, asset1.Name);
+						try
+						{
+							var bytes = _toc.GetAssetBytes(asset1.Span, asset1.Id);
+							File.WriteAllBytes(tempFile, bytes);
+						}
+						catch (Exception ex)
+						{
+							new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+							return;
+						}
+						var win = new ModdingTool.Windows.WemPlayerWindow(tempFile, true); // Pass full path and mark as temp
+						win.Show();
+					}
+					break;
+				case "ExportWemToWav":
+					if (selectedAssets.Count == 1 && selectedAssets[0] is Asset asset2 && asset2.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
+					{
+						string wemPath = asset2.FullPath;
+						if (string.IsNullOrEmpty(wemPath) || !File.Exists(wemPath))
+						{
+							var tempDir = System.IO.Path.GetTempPath();
+							var tempFile = System.IO.Path.Combine(tempDir, asset2.Name);
+							try
+							{
+								var bytes = _toc.GetAssetBytes(asset2.Span, asset2.Id);
+								File.WriteAllBytes(tempFile, bytes);
+								wemPath = tempFile; 
+#if DEBUG
+								new ModdingTool.Windows.CustomMessageBox($"Extracted to: {wemPath}\nExists: {File.Exists(wemPath)}", "DEBUG").ShowDialog();
+#endif
+							}
+							catch (Exception ex)
+							{
+								new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+								return;
+							}
+						}
+						var win = new ModdingTool.Windows.WemPlayerWindow(wemPath, false); // Pass full path
+						win.Convert_Click(null, null);
+					}
+					break;
 			}
 		}
 
@@ -1501,7 +1670,6 @@ namespace ModdingTool {
 		private void ExtractAssets(System.Collections.IList assets) {
 			var selected = assets.Count;
 			if (selected < 1) return;
-
 			if (selected == 1) ExtractOneAssetDialog((Asset)assets[0]);
 			else ExtractMultipleAssetsDialog(assets);
 		}

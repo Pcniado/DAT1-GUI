@@ -18,6 +18,8 @@ namespace ModdingTool
         public static readonly RoutedUICommand CopyPathCommand = new("Copy Path", "CopyPathCommand", typeof(AssetsListContextMenu));
         public static readonly RoutedUICommand CopyRefCommand = new("Copy Ref", "CopyRefCommand", typeof(AssetsListContextMenu));
         public static readonly RoutedUICommand EditConfigCommand = new("Edit Config", "EditConfigCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand PlayWemCommand = new("Play WEM", "PlayWemCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand ExportWemToWavCommand = new("Export WEM to WAV", "ExportWemToWavCommand", typeof(AssetsListContextMenu));
 
 
         public static MenuItem SelectedItemsCount => GetMenuItem("AssetsListContextMenu", "SelectedItemsCount");
@@ -28,6 +30,8 @@ namespace ModdingTool
         public static MenuItem CopyPath => GetMenuItem("AssetsListContextMenu", "CopyPath");
         public static MenuItem CopyRef => GetMenuItem("AssetsListContextMenu", "CopyRef");
         public static MenuItem EditConfig => GetMenuItem("AssetsListContextMenu", "EditConfig");
+        public static MenuItem PlayWem => GetMenuItem("AssetsListContextMenu", "PlayWem");
+        public static MenuItem ExportWemToWav => GetMenuItem("AssetsListContextMenu", "ExportWemToWav");
 
         public static void HandleContextMenuOpening(object sender, ContextMenuEventArgs e, int selectedCount)
         {

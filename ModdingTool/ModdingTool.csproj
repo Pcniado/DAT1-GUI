@@ -28,8 +28,10 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.1" />
     <PackageReference Include="IronPython" Version="3.4.2" />
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="5.1.0" />
     <!-- only simpleicons is used for github icon in WelcomeWindow.xaml -->
     <PackageReference Include="MahApps.Metro.IconPacks.SimpleIcons" Version="5.1.0" />
+    <PackageReference Include="NAudio" Version="2.2.1" />
     <PackageReference Include="Pfim" Version="0.11.3" />
     <PackageReference Include="WindowsAPICodePack-Shell" Version="1.1.1" />
   </ItemGroup>
@@ -53,5 +55,18 @@
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+
+  <Target Name="DownloadVgmstreamCli" AfterTargets="Build">
+    <PropertyGroup>
+      <VgmstreamDir>$(OutDir)3rdparty</VgmstreamDir>
+      <VgmstreamExe>$(VgmstreamDir)\vgmstream-cli.exe</VgmstreamExe>
+      <VgmstreamZip>$(VgmstreamDir)\vgmstream-win.zip</VgmstreamZip>
+      <VgmstreamUrl>https://github.com/vgmstream/vgmstream/releases/latest/download/vgmstream-win.zip</VgmstreamUrl>
+    </PropertyGroup>
+    <Exec Command="powershell -Command &quot;if (!(Test-Path '$(VgmstreamDir)')) { New-Item -ItemType Directory -Path '$(VgmstreamDir)' }&quot;" />
+    <Exec Condition="!Exists('$(VgmstreamExe)')" Command="powershell -Command &quot;Invoke-WebRequest -Uri '$(VgmstreamUrl)' -OutFile '$(VgmstreamZip)'&quot;" />
+    <Exec Condition="!Exists('$(VgmstreamExe)') and Exists('$(VgmstreamZip)')" Command="powershell -Command &quot;Add-Type -A 'System.IO.Compression.FileSystem'; [IO.Compression.ZipFile]::ExtractToDirectory('$(VgmstreamZip)', '$(VgmstreamDir)')&quot;" />
+    <Exec Condition="Exists('$(VgmstreamZip)')" Command="del /f /q &quot;$(VgmstreamZip)&quot;" />
+  </Target>
 
 </Project>
