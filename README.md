@@ -9,6 +9,7 @@ It is a fork of Tkachov’s original *Modding Tool*, enhanced with additional to
 - Custom scripting system using sandboxed python
 - Texture Viewer
 - Config Editor
+- Names for `.wem` files
 - Built in `.wem` player
 - Revamped User Interface
 - Automatic downloads of hashes for each of the supported games 
