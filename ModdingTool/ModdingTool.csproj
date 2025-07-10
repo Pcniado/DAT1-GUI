@@ -28,6 +28,7 @@
     <PackageReference Include="HtmlAgilityPack" Version="1.12.1" />
     <PackageReference Include="IronPython" Version="3.4.2" />
     <PackageReference Include="MahApps.Metro" Version="2.4.10" />
+    <PackageReference Include="MahApps.Metro.IconPacks" Version="5.1.0" />
     <!-- only simpleicons is used for github icon in WelcomeWindow.xaml -->
     <PackageReference Include="MahApps.Metro.IconPacks.SimpleIcons" Version="5.1.0" />
     <PackageReference Include="NAudio" Version="2.2.1" />

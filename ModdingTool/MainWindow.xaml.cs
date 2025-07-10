@@ -1347,6 +1347,12 @@ namespace ModdingTool {
             viewer.ShowDialog();
         }
 
+        private void Tools_WemPlayer_Click(object sender, RoutedEventArgs e)
+        {
+            var win = new ModdingTool.Windows.WemPlayerWindow();
+            win.Show();
+        }
+
         #endregion
         #region folders view
 
@@ -1543,9 +1549,22 @@ namespace ModdingTool {
 
 		private void ContextMenu_PlayWem(object sender, ExecutedRoutedEventArgs e)
 		{
+			//safety checks
 			if (AssetsList.SelectedItems.Count == 1 && AssetsList.SelectedItem is Asset asset && asset.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
 			{
-				var win = new ModdingTool.Windows.WemPlayerWindow(asset.FullPath ?? asset.Name);
+				var tempDir = System.IO.Path.GetTempPath();
+				var tempFile = System.IO.Path.Combine(tempDir, asset.Name);
+				try
+				{
+					var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+					File.WriteAllBytes(tempFile, bytes);
+				}
+				catch (Exception ex)
+				{
+					new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+					return;
+				}
+				var win = new ModdingTool.Windows.WemPlayerWindow(tempFile, true); 
 				win.Show();
 			}
 		}
@@ -1553,8 +1572,35 @@ namespace ModdingTool {
 		{
 			if (AssetsList.SelectedItems.Count == 1 && AssetsList.SelectedItem is Asset asset && asset.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
 			{
-				var win = new ModdingTool.Windows.WemPlayerWindow(asset.FullPath ?? asset.Name);
-				win.Convert_Click(null, null);
+				string wemPath = asset.FullPath;
+				if (string.IsNullOrEmpty(wemPath) || !File.Exists(wemPath))
+				{
+					var tempDir = System.IO.Path.GetTempPath();
+					var tempFile = System.IO.Path.Combine(tempDir, asset.Name);
+					try
+					{
+						var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						File.WriteAllBytes(tempFile, bytes);
+						wemPath = tempFile;
+					}
+					catch (Exception ex)
+					{
+						new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+						return;
+					}
+				}
+				var dlg = new Microsoft.Win32.SaveFileDialog { Filter = "WAV files (*.wav)|*.wav" };
+				if (dlg.ShowDialog() == true)
+				{
+					if (!WemPlayerWindow.RunVgmstreamStatic(wemPath, dlg.FileName))
+					{
+						new ModdingTool.Windows.CustomMessageBox("Failed to decode WEM file.", "Error").ShowDialog();
+					}
+					else
+					{
+						new ModdingTool.Windows.CustomMessageBox("Conversion complete.", "Info").ShowDialog();
+					}
+				}
 			}
 		}
 
@@ -1572,27 +1618,20 @@ namespace ModdingTool {
 				case "PlayWem":
 					if (selectedAssets.Count == 1 && selectedAssets[0] is Asset asset1 && asset1.Name.EndsWith(".wem", StringComparison.OrdinalIgnoreCase))
 					{
-						string wemPath = asset1.FullPath;
-						if (string.IsNullOrEmpty(wemPath) || !File.Exists(wemPath))
+						// Always extract to temp file
+						var tempDir = System.IO.Path.GetTempPath();
+						var tempFile = System.IO.Path.Combine(tempDir, asset1.Name);
+						try
 						{
-							var tempDir = System.IO.Path.GetTempPath();
-							var tempFile = System.IO.Path.Combine(tempDir, asset1.Name);
-							try
-							{
-								var bytes = _toc.GetAssetBytes(asset1.Span, asset1.Id);
-								File.WriteAllBytes(tempFile, bytes);
-								wemPath = tempFile; // Ensure wemPath is the full path
-#if DEBUG
-								new ModdingTool.Windows.CustomMessageBox($"Extracted to: {wemPath}\nExists: {File.Exists(wemPath)}", "DEBUG").ShowDialog();
-#endif
-							}
-							catch (Exception ex)
-							{
-								new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
-								return;
-							}
+							var bytes = _toc.GetAssetBytes(asset1.Span, asset1.Id);
+							File.WriteAllBytes(tempFile, bytes);
 						}
-						var win = new ModdingTool.Windows.WemPlayerWindow(wemPath); // Pass full path
+						catch (Exception ex)
+						{
+							new ModdingTool.Windows.CustomMessageBox($"Failed to extract WEM file: {ex.Message}", "Error").ShowDialog();
+							return;
+						}
+						var win = new ModdingTool.Windows.WemPlayerWindow(tempFile, true); // Pass full path and mark as temp
 						win.Show();
 					}
 					break;
@@ -1619,7 +1658,7 @@ namespace ModdingTool {
 								return;
 							}
 						}
-						var win = new ModdingTool.Windows.WemPlayerWindow(wemPath); // Pass full path
+						var win = new ModdingTool.Windows.WemPlayerWindow(wemPath, false); // Pass full path
 						win.Convert_Click(null, null);
 					}
 					break;
