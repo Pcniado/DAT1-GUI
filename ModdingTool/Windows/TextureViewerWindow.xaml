@@ -8,63 +8,83 @@
         WindowTitleBrush="{DynamicResource AppTitleBarGradient}"
         GlowBrush="{x:Null}">
 
-    <Controls:MetroWindow.Resources>
-        <Style x:Key="RoundedButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
-            <Setter Property="Padding" Value="16,6"/>
-            <Setter Property="MinWidth" Value="120"/>
-            <Setter Property="FontWeight" Value="SemiBold"/>
-        </Style>
-    </Controls:MetroWindow.Resources>
+	<Controls:MetroWindow.Resources>
+		<Style x:Key="RoundedButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+			<Setter Property="Padding" Value="16,6"/>
+			<Setter Property="MinWidth" Value="120"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+		</Style>
+	</Controls:MetroWindow.Resources>
 
-    <Grid>
-        <Grid.Background>
-            <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-                <GradientStop Color="#EEE" Offset="0.0"/>
-                <GradientStop Color="#EEE" Offset="1.0"/>
-            </LinearGradientBrush>
-        </Grid.Background>
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*" />
+			<ColumnDefinition Width="220" />
+		</Grid.ColumnDefinitions>
+		<Grid.Background>
+			<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+				<GradientStop Color="#EEE" Offset="0.0"/>
+				<GradientStop Color="#EEE" Offset="1.0"/>
+			</LinearGradientBrush>
+		</Grid.Background>
 
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+		<Grid.RowDefinitions>
+			<RowDefinition Height="Auto"/>
+			<RowDefinition Height="*"/>
+			<RowDefinition Height="Auto"/>
+		</Grid.RowDefinitions>
 
-        <!-- Metro‑style button stack -->
-        <StackPanel Orientation="Horizontal" Margin="16,16,16,8" Grid.Row="0" HorizontalAlignment="Left">
-            <Button Content="Browse Texture"
+		<!-- Metro‑style button stack -->
+		<StackPanel Orientation="Horizontal" Margin="16,16,16,8" Grid.Row="0" HorizontalAlignment="Left" Grid.Column="0">
+			<Button Content="Import Texture"
                     Click="OnBrowseTexture_Click"
                     Width="140"
                     Height="36"
                     Margin="0,0,12,0"/>
-
-            <Button Content="Export PNG"
+			<Button Content="Export"
                     Click="OnExportPng_Click"
                     Width="140"
-                    Height="36"
-                    Margin="0,0,12,0"/>
-
-            <Button Content="Import PNG"
-                    Click="OnImportPng_Click"
-                    Width="140"
                     Height="36"/>
-        </StackPanel>
+		</StackPanel>
 
-        <!-- Image preview area -->
-        <Border Grid.Row="1"
+		<!-- Image preview area -->
+		<Border Grid.Row="1" Grid.Column="0"
                 Margin="16"
                 CornerRadius="8"
                 Background="#FFF">
-            <ScrollViewer x:Name="ImageScrollViewer"
+			<ScrollViewer x:Name="ImageScrollViewer"
                           HorizontalScrollBarVisibility="Auto"
                           VerticalScrollBarVisibility="Auto">
-                <Image Name="TextureImage" Stretch="Uniform"/>
-            </ScrollViewer>
-        </Border>
+				<Image Name="TextureImage" Stretch="Uniform"/>
+			</ScrollViewer>
+		</Border>
 
-        <!-- Status bar -->
-        <StatusBar Grid.Row="2" Background="#F3F3F3" Foreground="#222" Height="28">
-            <TextBlock Name="StatusText" Text="Ready." FontWeight="SemiBold" VerticalAlignment="Center"/>
-        </StatusBar>
-    </Grid>
+		<!-- Info Sidebar -->
+		<Border Grid.Row="1" Grid.Column="1" Margin="8,16,16,16" Background="#F7F7F7" Padding="12" CornerRadius="8">
+			<StackPanel>
+				<TextBlock Text="Texture Info" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
+				<StackPanel>
+					<TextBlock Text="Format:" FontWeight="SemiBold"/>
+					<TextBlock Name="InfoFormat" Margin="0,0,0,8"/>
+					<TextBlock Text="Dimensions:" FontWeight="SemiBold"/>
+					<TextBlock Name="InfoDimensions" Margin="0,0,0,8"/>
+					<TextBlock Text="Mipmaps:" FontWeight="SemiBold"/>
+					<TextBlock Name="InfoMipmaps" Margin="0,0,0,8"/>
+				</StackPanel>
+				<TextBlock Text="Channel Preview:" FontWeight="SemiBold" Margin="0,16,0,4"/>
+				<ComboBox Name="ChannelComboBox" SelectedIndex="0" Height="28" SelectionChanged="OnChannelComboBox_SelectionChanged">
+					<ComboBoxItem Content="RGBA"/>
+					<ComboBoxItem Content="R"/>
+					<ComboBoxItem Content="G"/>
+					<ComboBoxItem Content="B"/>
+					<ComboBoxItem Content="A"/>
+				</ComboBox>
+			</StackPanel>
+		</Border>
+
+		<!-- Status bar -->
+		<StatusBar Grid.Row="2" Grid.ColumnSpan="2" Background="#F3F3F3" Foreground="#222" Height="28">
+			<TextBlock Name="StatusText" Text="Ready." FontWeight="SemiBold" VerticalAlignment="Center"/>
+		</StatusBar>
+	</Grid>
 </Controls:MetroWindow>
