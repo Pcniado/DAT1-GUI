@@ -20,6 +20,8 @@ namespace ModdingTool
         public static readonly RoutedUICommand EditConfigCommand = new("Edit Config", "EditConfigCommand", typeof(AssetsListContextMenu));
         public static readonly RoutedUICommand PlayWemCommand = new("Play WEM", "PlayWemCommand", typeof(AssetsListContextMenu));
         public static readonly RoutedUICommand ExportWemToWavCommand = new("Export WEM to WAV", "ExportWemToWavCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand ViewTextureCommand = new("View Texture", "ViewTextureCommand", typeof(AssetsListContextMenu));
+        public static readonly RoutedUICommand ExportTextureCommand = new("Export Texture", "ExportTextureCommand", typeof(AssetsListContextMenu));
 
 
         public static MenuItem SelectedItemsCount => GetMenuItem("AssetsListContextMenu", "SelectedItemsCount");
@@ -32,6 +34,8 @@ namespace ModdingTool
         public static MenuItem EditConfig => GetMenuItem("AssetsListContextMenu", "EditConfig");
         public static MenuItem PlayWem => GetMenuItem("AssetsListContextMenu", "PlayWem");
         public static MenuItem ExportWemToWav => GetMenuItem("AssetsListContextMenu", "ExportWemToWav");
+        public static MenuItem ViewTexture => GetMenuItem("AssetsListContextMenu", "ViewTexture");
+        public static MenuItem ExportTexture => GetMenuItem("AssetsListContextMenu", "ExportTexture");
 
         public static void HandleContextMenuOpening(object sender, ContextMenuEventArgs e, int selectedCount)
         {

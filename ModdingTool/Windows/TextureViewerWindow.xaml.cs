@@ -28,10 +28,12 @@ namespace ModdingTool.Windows
         private double _originalImageHeight = 0;
         private BitmapSource _originalBitmapSource = null;
         private byte[] _currentDdsData = null;
+        private bool _showImportButton = true;
 
-        public TextureViewerWindow()
+        public TextureViewerWindow(bool showImportButton = true)
         {
             InitializeComponent();
+            _showImportButton = showImportButton;
             TextureImage.MouseLeftButtonDown += TextureImage_MouseButtonDown;
             TextureImage.MouseLeftButtonUp += TextureImage_MouseButtonUp;
             TextureImage.MouseMove += TextureImage_MouseMove;
@@ -40,6 +42,7 @@ namespace ModdingTool.Windows
             this.PreviewMouseWheel += TextureViewerWindow_PreviewMouseWheel;
             TextureImage.Focusable = true;
             TextureImage.Focus();
+            ImportTextureButton.Visibility = _showImportButton ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void TextureImage_MouseButtonDown(object sender, MouseButtonEventArgs e)
@@ -151,7 +154,7 @@ namespace ModdingTool.Windows
             }
         }
 
-        private void LoadTexture(string filePath)
+        public void LoadTexture(string filePath)
         {
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
             bool isTexture = ext == ".texture" || filePath.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase);

@@ -74,6 +74,8 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ViewTextureCommand, ContextMenu_ViewTexture));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportTextureCommand, ContextMenu_ExportTexture));
 
 			UpdateProjectSettingsMenuItemState();
 
@@ -99,6 +101,8 @@ namespace ModdingTool {
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
 			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ViewTextureCommand, ContextMenu_ViewTexture));
+			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportTextureCommand, ContextMenu_ExportTexture));
 
 			UpdateProjectSettingsMenuItemState();
 
@@ -1343,8 +1347,8 @@ namespace ModdingTool {
 
         private void Tools_TextureViewer_Click(object sender, RoutedEventArgs e)
         {
-            var viewer = new ModdingTool.Windows.TextureViewerWindow();
-            viewer.ShowDialog();
+            var viewer = new ModdingTool.Windows.TextureViewerWindow(true);
+            viewer.Show();
         }
 
         private void Tools_WemPlayer_Click(object sender, RoutedEventArgs e)
@@ -1475,9 +1479,18 @@ namespace ModdingTool {
 				{
 					exportItem.Visibility = Visibility.Collapsed;
 				}
-			}
+			} //this is a MESS fucking fix this garbage
 			AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
 			if (selected == 1 && AssetsList.SelectedItem is Asset asset) {
+				string assetName = asset.Name;
+				bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
+				if (isTexture) {
+					AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
+					AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
+				} else {
+					AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
+					AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
+				}
 				if (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false)
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
 				else
@@ -1493,6 +1506,8 @@ namespace ModdingTool {
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
 				AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
 				AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
 			}
 			AssetsListContextMenu.CopyRef.Visibility = (selected > 0) ? Visibility.Visible : Visibility.Collapsed;
 		}
@@ -1600,6 +1615,123 @@ namespace ModdingTool {
 					{
 						new ModdingTool.Windows.CustomMessageBox("Conversion complete.", "Info").ShowDialog();
 					}
+				}
+			}
+		}
+
+		private void ContextMenu_ViewTexture(object sender, ExecutedRoutedEventArgs e)
+		{
+			if (AssetsList.SelectedItems.Count == 1 && AssetsList.SelectedItem is Asset asset)
+			{
+				string assetName = asset.Name;
+				bool isHD = assetName.EndsWith(" (HD)");
+				string baseName = isHD ? assetName.Substring(0, assetName.Length - " (HD)".Length) : assetName;
+				string tempDir = System.IO.Path.GetTempPath();
+				string tempTexture = System.IO.Path.Combine(tempDir, baseName);
+				string tempHDTexture = System.IO.Path.Combine(tempDir, baseName.Replace(".texture", ".hd.texture"));
+				try
+				{
+					if (isHD)
+					{
+						// Extract SD (span 0) and HD (span 1)
+						var sdAsset = _assets.FirstOrDefault(a => a.Name == baseName && a.Span == 0);
+						if (sdAsset != null)
+						{
+							var sdBytes = _toc.GetAssetBytes(sdAsset.Span, sdAsset.Id);
+							File.WriteAllBytes(tempTexture, sdBytes);
+						}
+						var hdBytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						File.WriteAllBytes(tempHDTexture, hdBytes);
+						var win = new ModdingTool.Windows.TextureViewerWindow(false);
+						win.Show();
+						win.LoadTexture(tempHDTexture); // .hd.texture as filePath, logic will use .texture for header
+					}
+					else
+					{
+						var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						File.WriteAllBytes(tempTexture, bytes);
+						var hdAsset = _assets.FirstOrDefault(a => a.Name == baseName && a.Span == 1);
+						if (hdAsset != null)
+						{
+							var hdBytes = _toc.GetAssetBytes(hdAsset.Span, hdAsset.Id);
+							File.WriteAllBytes(tempHDTexture, hdBytes);
+							var win = new ModdingTool.Windows.TextureViewerWindow(false);
+							win.Show();
+							win.LoadTexture(tempHDTexture); // .hd.texture as filePath, logic will use .texture for header
+						}
+						else
+						{
+							var win = new ModdingTool.Windows.TextureViewerWindow(false);
+							win.Show();
+							win.LoadTexture(tempTexture);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					new ModdingTool.Windows.CustomMessageBox($"Failed to extract texture: {ex.Message}", "Error").ShowDialog();
+					return;
+				}
+			}
+		}
+
+		private void ContextMenu_ExportTexture(object sender, ExecutedRoutedEventArgs e)
+		{
+			if (AssetsList.SelectedItems.Count == 1 && AssetsList.SelectedItem is Asset asset)
+			{
+				string assetName = asset.Name;
+				bool isHD = assetName.EndsWith(" (HD)");
+				string baseName = isHD ? assetName.Substring(0, assetName.Length - " (HD)".Length) : assetName;
+				string tempDir = System.IO.Path.GetTempPath();
+				string tempTexture = System.IO.Path.Combine(tempDir, baseName);
+				string tempHDTexture = System.IO.Path.Combine(tempDir, baseName.Replace(".texture", ".hd.texture"));
+				try
+				{
+					if (isHD)
+					{
+						// Extract SD (span 0) and HD (span 1)
+						var sdAsset = _assets.FirstOrDefault(a => a.Name == baseName && a.Span == 0);
+						if (sdAsset != null)
+						{
+							var sdBytes = _toc.GetAssetBytes(sdAsset.Span, sdAsset.Id);
+							File.WriteAllBytes(tempTexture, sdBytes);
+						}
+						var hdBytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						File.WriteAllBytes(tempHDTexture, hdBytes);
+						// Ask user for export location (folder)
+						var dlg = new Microsoft.Win32.SaveFileDialog
+						{
+							Filter = "Texture files (*.texture)|*.texture",
+							FileName = baseName
+						};
+						if (dlg.ShowDialog() == true)
+						{
+							string exportBase = Path.Combine(Path.GetDirectoryName(dlg.FileName), Path.GetFileNameWithoutExtension(dlg.FileName));
+							File.Copy(tempTexture, exportBase + ".texture", true);
+							File.Copy(tempHDTexture, exportBase + ".hd.texture", true);
+							new ModdingTool.Windows.CustomMessageBox($"Exported:\n{exportBase}.texture\n{exportBase}.hd.texture", "Export Complete").ShowDialog();
+						}
+					}
+					else
+					{
+						var bytes = _toc.GetAssetBytes(asset.Span, asset.Id);
+						File.WriteAllBytes(tempTexture, bytes);
+						var dlg = new Microsoft.Win32.SaveFileDialog
+						{
+							Filter = "Texture files (*.texture)|*.texture",
+							FileName = baseName
+						};
+						if (dlg.ShowDialog() == true)
+						{
+							File.Copy(tempTexture, dlg.FileName, true);
+							new ModdingTool.Windows.CustomMessageBox($"Exported:\n{dlg.FileName}", "Export Complete").ShowDialog();
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					new ModdingTool.Windows.CustomMessageBox($"Failed to extract texture: {ex.Message}", "Error").ShowDialog();
+					return;
 				}
 			}
 		}

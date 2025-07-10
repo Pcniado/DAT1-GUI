@@ -106,7 +106,9 @@ namespace ModdingTool.Windows
                         br.ReadBytes(4); // skip 4 bytes (unknown)
                         // Read all bytes from HD file as image data
                         byte[] imageData = File.ReadAllBytes(hdPath);
+#if DEBUG
                         File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[HD] Using SD header: width={width}, height={height}, format={format}, hdDataLen={imageData.Length}\n");
+#endif
                         var dds = InsomniacTextureDecoder.DecodeToDDS(imageData, width, height, format);
                         if (dds != null)
                         {
@@ -126,31 +128,81 @@ namespace ModdingTool.Windows
                 {
                     fs.Seek(offsetSD, SeekOrigin.Begin);
                     long pos;
-                    pos = fs.Position; uint imgSize = br.ReadUInt32(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] imgSize @ 0x{pos:X}: {imgSize}\n");
-                    pos = fs.Position; uint hdSize = br.ReadUInt32(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] hdSize @ 0x{pos:X}: {hdSize}\n");
-                    pos = fs.Position; ushort width = br.ReadUInt16(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] width @ 0x{pos:X}: {width}\n");
-                    pos = fs.Position; ushort height = br.ReadUInt16(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] height @ 0x{pos:X}: {height}\n");
-                    pos = fs.Position; ushort sdWidth = br.ReadUInt16(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] sdWidth @ 0x{pos:X}: {sdWidth}\n");
-                    pos = fs.Position; ushort sdHeight = br.ReadUInt16(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] sdHeight @ 0x{pos:X}: {sdHeight}\n");
-                    pos = fs.Position; ushort images = br.ReadUInt16(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] images @ 0x{pos:X}: {images}\n");
-                    pos = fs.Position; byte channels = br.ReadByte(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] channels @ 0x{pos:X}: {channels}\n");
-                    pos = fs.Position; byte[] skip5 = br.ReadBytes(5); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip5 @ 0x{pos:X}: {BitConverter.ToString(skip5)}\n");
-                    pos = fs.Position; byte formatByte = br.ReadByte(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] format (byte) @ 0x{pos:X}: {formatByte}\n");
+                    pos = fs.Position; uint imgSize = br.ReadUInt32();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] imgSize @ 0x{pos:X}: {imgSize}\n");
+#endif
+                    pos = fs.Position; uint hdSize = br.ReadUInt32();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] hdSize @ 0x{pos:X}: {hdSize}\n");
+#endif
+                    pos = fs.Position; ushort width = br.ReadUInt16();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] width @ 0x{pos:X}: {width}\n");
+#endif
+                    pos = fs.Position; ushort height = br.ReadUInt16();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] height @ 0x{pos:X}: {height}\n");
+#endif
+                    pos = fs.Position; ushort sdWidth = br.ReadUInt16();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] sdWidth @ 0x{pos:X}: {sdWidth}\n");
+#endif
+                    pos = fs.Position; ushort sdHeight = br.ReadUInt16();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] sdHeight @ 0x{pos:X}: {sdHeight}\n");
+#endif
+                    pos = fs.Position; ushort images = br.ReadUInt16();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] images @ 0x{pos:X}: {images}\n");
+#endif
+                    pos = fs.Position; byte channels = br.ReadByte();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] channels @ 0x{pos:X}: {channels}\n");
+#endif
+                    pos = fs.Position; byte[] skip5 = br.ReadBytes(5);
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip5 @ 0x{pos:X}: {BitConverter.ToString(skip5)}\n");
+#endif
+                    pos = fs.Position; byte formatByte = br.ReadByte();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] format (byte) @ 0x{pos:X}: {formatByte}\n");
+#endif
                     // Try alternate layout if formatByte is 0 or invalid
                     byte format = formatByte;
                     if (formatByte == 0 || formatByte == 0xFF)
                     {
-                        pos = fs.Position; byte skip1 = br.ReadByte(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip1 (alt) @ 0x{pos:X}: {skip1}\n");
-                        pos = fs.Position; ushort formatAlt = br.ReadUInt16(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] format (alt ushort) @ 0x{pos:X}: {formatAlt}\n");
+                        pos = fs.Position; byte skip1 = br.ReadByte();
+#if DEBUG
+                        File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip1 (alt) @ 0x{pos:X}: {skip1}\n");
+#endif
+                        pos = fs.Position; ushort formatAlt = br.ReadUInt16();
+#if DEBUG
+                        File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] format (alt ushort) @ 0x{pos:X}: {formatAlt}\n");
+#endif
                         format = (byte)formatAlt; // fallback for now
                     }
-                    pos = fs.Position; byte unk = br.ReadByte(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip unknown byte @ 0x{pos:X}: {unk}\n");
-                    pos = fs.Position; byte mipmaps = br.ReadByte(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] mipmaps @ 0x{pos:X}: {mipmaps}\n");
-                    pos = fs.Position; byte hdmipmaps = br.ReadByte(); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] hdmipmaps @ 0x{pos:X}: {hdmipmaps}\n");
-                    pos = fs.Position; byte[] skip4 = br.ReadBytes(4); File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip4 @ 0x{pos:X}: {BitConverter.ToString(skip4)}\n");
+                    pos = fs.Position; byte unk = br.ReadByte();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip unknown byte @ 0x{pos:X}: {unk}\n");
+#endif
+                    pos = fs.Position; byte mipmaps = br.ReadByte();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] mipmaps @ 0x{pos:X}: {mipmaps}\n");
+#endif
+                    pos = fs.Position; byte hdmipmaps = br.ReadByte();
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] hdmipmaps @ 0x{pos:X}: {hdmipmaps}\n");
+#endif
+                    pos = fs.Position; byte[] skip4 = br.ReadBytes(4);
+#if DEBUG
+                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip4 @ 0x{pos:X}: {BitConverter.ToString(skip4)}\n");
+#endif
                     // Read all bytes from HD file as image data
                     byte[] imageData = File.Exists(hdPath) ? File.ReadAllBytes(hdPath) : br.ReadBytes((int)(imgSize / images));
+#if DEBUG
                     File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] width={width}, height={height}, format={format}, dataLen={imageData.Length}\n");
+#endif
                     var dds = InsomniacTextureDecoder.DecodeToDDS(imageData, width, height, format);
                             if (dds != null)
                             {
@@ -162,7 +214,9 @@ namespace ModdingTool.Windows
             }
             catch (Exception ex)
             {
+#if DEBUG
                 File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[ERROR] {filePath}: {ex}\n");
+#endif
                 return null;
             }
         }
@@ -198,18 +252,24 @@ namespace ModdingTool.Windows
                 br.ReadBytes(4); // skip 4 bytes (unknown)
                 // After parsing the header, read image data from current position
                 long imageDataOffset = fs.Position;
+#if DEBUG
                 File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[{label}] Header start: 0x{headerStart:X}, Format offset: 0x{formatOffset:X}, Format: {format}, Image data offset: 0x{imageDataOffset:X}\n");
+#endif
                 int imageBlockSize = (int)(imgSize / images);
                 byte[] imageData = br.ReadBytes(imageBlockSize); // Only the first image's data
                 // Debug: dump first 32 bytes as hex
                 StringBuilder hex = new StringBuilder();
                 for (int i = 0; i < Math.Min(32, imageData.Length); i++)
                     hex.Append($"{imageData[i]:X2} ");
+#if DEBUG
                 File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[{label}] First 32 bytes: {hex}\n");
+#endif
                 var dds = InsomniacTextureDecoder.DecodeToDDS(imageData, width, height, format);
                 if (dds != null)
                 {
+#if DEBUG
                     File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[{label}] DDS constructed: width={width}, height={height}, format={format}, mipmapDataLength={imageData.Length}, ddsLength={dds.Length}\n");
+#endif
                     spanIndex = (label == "HD") ? 1 : 0;
                     return dds;
                 }
@@ -222,7 +282,9 @@ namespace ModdingTool.Windows
         {
             bool foundAnyBlock = false;
             StringBuilder debugBlocks = new StringBuilder();
+#if DEBUG
             string debugLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log");
+#endif
             using (var ms = new MemoryStream(sectionData))
             using (var br = new BinaryReader(ms))
             {
@@ -245,7 +307,9 @@ namespace ModdingTool.Windows
                         if (spanIndex == wantedSpan)
                         {
                             // Log the offset and size of the extracted texel data block
+#if DEBUG
                             File.AppendAllText(debugLogPath, $"Extracted Texel Data block: Span={spanIndex}, Offset=0x{blockStart:X}, Size={data.Length}\n");
+#endif
                             return data;
                         }
                         foundAnyBlock = true;
@@ -273,7 +337,9 @@ namespace ModdingTool.Windows
         {
             if (!File.Exists(filePath))
                 return null;
+#if DEBUG
             string debugLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log");
+#endif
             try
             {
                 var asset = new AssetManager(File.ReadAllBytes(filePath));
@@ -283,52 +349,93 @@ namespace ModdingTool.Windows
                     return null;
                 using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 using (var br = new BinaryReader(fs))
-                using (var debugWriter = new StreamWriter(debugLogPath, true))
                 {
-                    debugWriter.WriteLine($"\n--- ExtractTextureInfo: {filePath} ---");
-                    debugWriter.WriteLine($"Section offset: {offset}, size: {size}");
+#if DEBUG
+                    using (var debugWriter = new StreamWriter(debugLogPath, true))
+                    {
+                        debugWriter.WriteLine($"\n--- ExtractTextureInfo: {filePath} ---");
+                        debugWriter.WriteLine($"Section offset: {offset}, size: {size}");
+                        fs.Seek(offset, SeekOrigin.Begin);
+                        var info = new TextureInfo();
+                        long pos;
+                        pos = fs.Position; info.Size = br.ReadUInt32(); debugWriter.WriteLine($"[{pos:X}] Size: {info.Size}");
+                        pos = fs.Position; info.HDSize = br.ReadUInt32(); debugWriter.WriteLine($"[{pos:X}] HDSize: {info.HDSize}");
+                        pos = fs.Position; info.Width = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Width: {info.Width}");
+                        pos = fs.Position; info.Height = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Height: {info.Height}");
+                        pos = fs.Position; info.SDWidth = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] SDWidth: {info.SDWidth}");
+                        pos = fs.Position; info.SDHeight = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] SDHeight: {info.SDHeight}");
+                        pos = fs.Position; info.Images = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Images: {info.Images}");
+                        pos = fs.Position; info.Channels = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Channels: {info.Channels}");
+
+                        if (asset._assetGame == AssetManager.Game.MSM2)
+                        {
+                            pos = fs.Position; var skip5 = br.ReadBytes(5); debugWriter.WriteLine($"[{pos:X}] Skip 5 bytes: {BitConverter.ToString(skip5)}");
+                            pos = fs.Position; info.Format = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Format (byte): {info.Format}");
+                            pos = fs.Position; var unk = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip unknown byte: {unk}");
+                            pos = fs.Position; info.Mipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Mipmaps: {info.Mipmaps}");
+                            pos = fs.Position; info.HDMipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] HDMipmaps: {info.HDMipmaps}");
+                            pos = fs.Position; var skip4 = br.ReadBytes(4); debugWriter.WriteLine($"[{pos:X}] Skip 4 bytes: {BitConverter.ToString(skip4)}");
+                        }
+                        else
+                        {
+                            pos = fs.Position; var skip1 = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip 1 byte: {skip1}");
+                            pos = fs.Position; info.Format = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Format (ushort): {info.Format}");
+                            pos = fs.Position; var skip8 = br.ReadBytes(8); debugWriter.WriteLine($"[{pos:X}] Skip 8 bytes: {BitConverter.ToString(skip8)}");
+                            pos = fs.Position; info.Mipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Mipmaps: {info.Mipmaps}");
+                            pos = fs.Position; var skip1b = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip 1 byte: {skip1b}");
+                            pos = fs.Position; info.HDMipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] HDMipmaps: {info.HDMipmaps}");
+                            pos = fs.Position; var skip11 = br.ReadBytes(11); debugWriter.WriteLine($"[{pos:X}] Skip 11 bytes: {BitConverter.ToString(skip11)}");
+                        }
+
+                        info.SourceFile = filePath;
+                        info.HasHD = File.Exists(System.IO.Path.ChangeExtension(filePath, ".hd.texture"));
+                        debugWriter.Flush();
+                        return info;
+                    }
+#else
                     fs.Seek(offset, SeekOrigin.Begin);
                     var info = new TextureInfo();
                     long pos;
-                    pos = fs.Position; info.Size = br.ReadUInt32(); debugWriter.WriteLine($"[{pos:X}] Size: {info.Size}");
-                    pos = fs.Position; info.HDSize = br.ReadUInt32(); debugWriter.WriteLine($"[{pos:X}] HDSize: {info.HDSize}");
-                    pos = fs.Position; info.Width = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Width: {info.Width}");
-                    pos = fs.Position; info.Height = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Height: {info.Height}");
-                    pos = fs.Position; info.SDWidth = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] SDWidth: {info.SDWidth}");
-                    pos = fs.Position; info.SDHeight = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] SDHeight: {info.SDHeight}");
-                    pos = fs.Position; info.Images = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Images: {info.Images}");
-                    pos = fs.Position; info.Channels = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Channels: {info.Channels}");
+                    pos = fs.Position; info.Size = br.ReadUInt32();
+                    pos = fs.Position; info.HDSize = br.ReadUInt32();
+                    pos = fs.Position; info.Width = br.ReadUInt16();
+                    pos = fs.Position; info.Height = br.ReadUInt16();
+                    pos = fs.Position; info.SDWidth = br.ReadUInt16();
+                    pos = fs.Position; info.SDHeight = br.ReadUInt16();
+                    pos = fs.Position; info.Images = br.ReadUInt16();
+                    pos = fs.Position; info.Channels = br.ReadByte();
 
                     if (asset._assetGame == AssetManager.Game.MSM2)
                     {
-                        pos = fs.Position; var skip5 = br.ReadBytes(5); debugWriter.WriteLine($"[{pos:X}] Skip 5 bytes: {BitConverter.ToString(skip5)}");
-                        pos = fs.Position; info.Format = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Format (byte): {info.Format}");
-                        pos = fs.Position; var unk = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip unknown byte: {unk}");
-                        pos = fs.Position; info.Mipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Mipmaps: {info.Mipmaps}");
-                        pos = fs.Position; info.HDMipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] HDMipmaps: {info.HDMipmaps}");
-                        pos = fs.Position; var skip4 = br.ReadBytes(4); debugWriter.WriteLine($"[{pos:X}] Skip 4 bytes: {BitConverter.ToString(skip4)}");
+                        pos = fs.Position; br.ReadBytes(5);
+                        pos = fs.Position; info.Format = br.ReadByte();
+                        pos = fs.Position; br.ReadByte();
+                        pos = fs.Position; info.Mipmaps = br.ReadByte();
+                        pos = fs.Position; info.HDMipmaps = br.ReadByte();
+                        pos = fs.Position; br.ReadBytes(4);
                     }
                     else
                     {
-                        pos = fs.Position; var skip1 = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip 1 byte: {skip1}");
-                        pos = fs.Position; info.Format = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Format (ushort): {info.Format}");
-                        pos = fs.Position; var skip8 = br.ReadBytes(8); debugWriter.WriteLine($"[{pos:X}] Skip 8 bytes: {BitConverter.ToString(skip8)}");
-                        pos = fs.Position; info.Mipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Mipmaps: {info.Mipmaps}");
-                        pos = fs.Position; var skip1b = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip 1 byte: {skip1b}");
-                        pos = fs.Position; info.HDMipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] HDMipmaps: {info.HDMipmaps}");
-                        pos = fs.Position; var skip11 = br.ReadBytes(11); debugWriter.WriteLine($"[{pos:X}] Skip 11 bytes: {BitConverter.ToString(skip11)}");
+                        pos = fs.Position; br.ReadByte();
+                        pos = fs.Position; info.Format = br.ReadUInt16();
+                        pos = fs.Position; br.ReadBytes(8);
+                        pos = fs.Position; info.Mipmaps = br.ReadByte();
+                        pos = fs.Position; br.ReadByte();
+                        pos = fs.Position; info.HDMipmaps = br.ReadByte();
+                        pos = fs.Position; br.ReadBytes(11);
                     }
 
                     info.SourceFile = filePath;
                     info.HasHD = File.Exists(System.IO.Path.ChangeExtension(filePath, ".hd.texture"));
-                    debugWriter.Flush();
                     return info;
+#endif
                 }
             }
             catch (Exception ex)
             {
-                // Only log actual errors, do not show debug popups
+#if DEBUG
                 File.AppendAllText(debugLogPath, $"[ERROR] {filePath}: {ex}\n");
+#endif
                 return null;
             }
         }

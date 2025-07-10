@@ -6,7 +6,9 @@
         Height="600" Width="800"
         WindowStartupLocation="CenterScreen"
         WindowTitleBrush="{DynamicResource AppTitleBarGradient}"
-        GlowBrush="{x:Null}">
+        GlowBrush="{x:Null}"
+        BorderThickness="0"
+        BorderBrush="Transparent">
 
 	<Controls:MetroWindow.Resources>
 		<Style x:Key="RoundedButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
@@ -36,7 +38,8 @@
 
 		<!-- Metro‑style button stack -->
 		<StackPanel Orientation="Horizontal" Margin="16,16,16,8" Grid.Row="0" HorizontalAlignment="Left" Grid.Column="0">
-			<Button Content="Import Texture"
+			<Button x:Name="ImportTextureButton"
+                    Content="Import Texture"
                     Click="OnBrowseTexture_Click"
                     Width="140"
                     Height="36"
@@ -48,16 +51,13 @@
 		</StackPanel>
 
 		<!-- Image preview area -->
-		<Border Grid.Row="1" Grid.Column="0"
-                Margin="16"
-                CornerRadius="8"
-                Background="#FFF">
-			<ScrollViewer x:Name="ImageScrollViewer"
-                          HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Auto">
-				<Image Name="TextureImage" Stretch="Uniform"/>
-			</ScrollViewer>
-		</Border>
+		<ScrollViewer x:Name="ImageScrollViewer"
+                      Grid.Row="1" Grid.Column="0"
+                      Margin="16"
+                      HorizontalScrollBarVisibility="Auto"
+                      VerticalScrollBarVisibility="Auto">
+			<Image Name="TextureImage" Stretch="Uniform"/>
+		</ScrollViewer>
 
 		<!-- Info Sidebar -->
 		<Border Grid.Row="1" Grid.Column="1" Margin="8,16,16,16" Background="#F7F7F7" Padding="12" CornerRadius="8">
