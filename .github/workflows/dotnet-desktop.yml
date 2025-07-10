@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        configuration: [Release]
 
     steps:
     - name: Checkout repository
@@ -26,36 +26,35 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Download and extract vgmstream-cli.exe
-      run: |
-        $vgmstreamDir = "$(Join-Path $env:RUNNER_TEMP 'vgmstream')"
-        $vgmstreamZip = "$vgmstreamDir\vgmstream-win.zip"
-        $vgmstreamExe = "$vgmstreamDir\vgmstream-cli.exe"
-        $vgmstreamUrl = "https://github.com/vgmstream/vgmstream/releases/latest/download/vgmstream-win.zip"
-
-        if (!(Test-Path $vgmstreamDir)) {
-          New-Item -ItemType Directory -Path $vgmstreamDir | Out-Null
-        }
-
-        if (!(Test-Path $vgmstreamExe)) {
-          Invoke-WebRequest -Uri $vgmstreamUrl -OutFile $vgmstreamZip
-          Add-Type -AssemblyName System.IO.Compression.FileSystem
-          [System.IO.Compression.ZipFile]::ExtractToDirectory($vgmstreamZip, $vgmstreamDir)
-          Remove-Item $vgmstreamZip -Force
-        }
-
-        echo "VGMSTREAM downloaded to $vgmstreamDir"
-      shell: pwsh
-
     - name: Build
       run: dotnet build --configuration ${{ matrix.configuration }}
 
     - name: Publish
       run: dotnet publish --configuration ${{ matrix.configuration }} --output ./publish/${{ matrix.configuration }}
 
-    - name: Copy vgmstream-cli.exe into published folder
+    - name: Download and extract vgmstream (only .exe and .dlls)
       run: |
-        Copy-Item "$env:RUNNER_TEMP\vgmstream\vgmstream-cli.exe" -Destination "./publish/${{ matrix.configuration }}/vgmstream-cli.exe"
+        $vgmstreamUrl = "https://github.com/vgmstream/vgmstream/releases/latest/download/vgmstream-win.zip"
+        $tempDir = "$(Join-Path $env:RUNNER_TEMP 'vgmstream')"
+        $zipPath = "$tempDir\vgmstream.zip"
+        $extractDir = "$tempDir\unzipped"
+
+        New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
+        Invoke-WebRequest -Uri $vgmstreamUrl -OutFile $zipPath
+
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        [System.IO.Compression.ZipFile]::ExtractToDirectory($zipPath, $extractDir)
+
+
+        $outputDir = "./publish/${{ matrix.configuration }}/3rdparty"
+        New-Item -ItemType Directory -Force -Path $outputDir | Out-Null
+
+        Get-ChildItem -Path $extractDir -Include *.exe, *.dll -Recurse | ForEach-Object {
+          Copy-Item $_.FullName -Destination $outputDir -Force
+        }
+
+
+        Remove-Item $zipPath -Force
       shell: pwsh
 
     - name: Upload published build
