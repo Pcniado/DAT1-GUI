@@ -1,54 +1,65 @@
-name: .NET 7 Desktop CI
+name: Build .NET App with VGMStream
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
   build:
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-
     runs-on: windows-latest
 
-    env:
-      Solution_Name: DAT1-GUI.sln
-      Build_Project_Path: ModdingTool\ModdingTool.csproj
+    strategy:
+      matrix:
+        configuration: [Release]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
 
-    - name: Setup .NET 7 SDK
-      uses: actions/setup-dotnet@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 7.0.x
+        dotnet-version: '7.0.x'
 
-    - name: Restore NuGet packages
-      run: dotnet restore ${{ env.Solution_Name }}
+    - name: Restore dependencies
+      run: dotnet restore
 
-    - name: Build the project (suppress warnings in output)
+    - name: Download and extract vgmstream-cli.exe
       run: |
-        dotnet build $env:Solution_Name `
-          --configuration ${{ matrix.configuration }} `
-          --no-restore `
-          -warnasmessage:*
+        $vgmstreamDir = "$(Join-Path $env:RUNNER_TEMP 'vgmstream')"
+        $vgmstreamZip = "$vgmstreamDir\vgmstream-win.zip"
+        $vgmstreamExe = "$vgmstreamDir\vgmstream-cli.exe"
+        $vgmstreamUrl = "https://github.com/vgmstream/vgmstream/releases/latest/download/vgmstream-win.zip"
 
-    # Optional: Add test step if you have a test project
-    # - name: Run unit tests
-    #   run: dotnet test path\to\tests.csproj --configuration ${{ matrix.configuration }} --no-build
+        if (!(Test-Path $vgmstreamDir)) {
+          New-Item -ItemType Directory -Path $vgmstreamDir | Out-Null
+        }
 
-    - name: Publish build output
+        if (!(Test-Path $vgmstreamExe)) {
+          Invoke-WebRequest -Uri $vgmstreamUrl -OutFile $vgmstreamZip
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [System.IO.Compression.ZipFile]::ExtractToDirectory($vgmstreamZip, $vgmstreamDir)
+          Remove-Item $vgmstreamZip -Force
+        }
+
+        echo "VGMSTREAM downloaded to $vgmstreamDir"
+      shell: pwsh
+
+    - name: Build
+      run: dotnet build --configuration ${{ matrix.configuration }}
+
+    - name: Publish
+      run: dotnet publish --configuration ${{ matrix.configuration }} --output ./publish/${{ matrix.configuration }}
+
+    - name: Copy vgmstream-cli.exe into published folder
       run: |
-        dotnet publish $env:Build_Project_Path `
-          --configuration ${{ matrix.configuration }} `
-          --output ./publish/${{ matrix.configuration }}
+        Copy-Item "$env:RUNNER_TEMP\vgmstream\vgmstream-cli.exe" -Destination "./publish/${{ matrix.configuration }}/vgmstream-cli.exe"
+      shell: pwsh
 
-    - name: Upload published app
+    - name: Upload published build
       uses: actions/upload-artifact@v4
       with:
-        name: ModdingTool-${{ matrix.configuration }}
+        name: published-app
         path: ./publish/${{ matrix.configuration }}
