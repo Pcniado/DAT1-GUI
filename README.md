@@ -7,7 +7,8 @@ It is a fork of Tkachov’s original *Modding Tool*, enhanced with additional to
 
 - Robust Project System for restoring your work
 - Custom scripting system using sandboxed python
-- Config Editor
+- `.config` Editor
+- Built in `.wem` player
 - Revamped User Interface
 - Automatic downloads of hashes for each of the supported games 
 - Various Quality of Life Features
