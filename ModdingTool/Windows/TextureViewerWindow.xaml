@@ -25,8 +25,8 @@
 		</Grid.ColumnDefinitions>
 		<Grid.Background>
 			<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-				<GradientStop Color="#EEE" Offset="0.0"/>
-				<GradientStop Color="#EEE" Offset="1.0"/>
+				<GradientStop Color="#232323" Offset="0.0"/>
+				<GradientStop Color="#232323" Offset="1.0"/>
 			</LinearGradientBrush>
 		</Grid.Background>
 
@@ -36,18 +36,19 @@
 			<RowDefinition Height="Auto"/>
 		</Grid.RowDefinitions>
 
-		<!-- Metro‑style button stack -->
 		<StackPanel Orientation="Horizontal" Margin="16,16,16,8" Grid.Row="0" HorizontalAlignment="Left" Grid.Column="0">
 			<Button x:Name="ImportTextureButton"
                     Content="Import Texture"
                     Click="OnBrowseTexture_Click"
                     Width="140"
                     Height="36"
-                    Margin="0,0,12,0"/>
+                    Margin="0,0,12,0"
+                    Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
 			<Button Content="Export"
                     Click="OnExportPng_Click"
                     Width="140"
-                    Height="36"/>
+                    Height="36"
+                    Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
 		</StackPanel>
 
 		<!-- Image preview area -->
@@ -60,7 +61,7 @@
 		</ScrollViewer>
 
 		<!-- Info Sidebar -->
-		<Border Grid.Row="1" Grid.Column="1" Margin="8,16,16,16" Background="#F7F7F7" Padding="12" CornerRadius="8">
+		<Border Grid.Row="1" Grid.Column="1" Margin="8,16,16,16" Background="#31313a" Padding="12" CornerRadius="8">
 			<StackPanel>
 				<TextBlock Text="Texture Info" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
 				<StackPanel>
@@ -83,7 +84,7 @@
 		</Border>
 
 		<!-- Status bar -->
-		<StatusBar Grid.Row="2" Grid.ColumnSpan="2" Background="#F3F3F3" Foreground="#222" Height="28">
+		<StatusBar Grid.Row="2" Grid.ColumnSpan="2" Background="#232323" Foreground="#eee" Height="28">
 			<TextBlock Name="StatusText" Text="Ready." FontWeight="SemiBold" VerticalAlignment="Center"/>
 		</StatusBar>
 	</Grid>

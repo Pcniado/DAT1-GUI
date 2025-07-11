@@ -11,17 +11,19 @@
         BorderThickness="0">
     <Controls:MetroWindow.Resources>
     </Controls:MetroWindow.Resources>
-    <Grid>
-        <StackPanel Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center">
-            <TextBlock x:Name="FileNameLabel" Text="" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8" />
+    <Grid Background="#232323">
+        <StackPanel Margin="16" HorizontalAlignment="Center" VerticalAlignment="Center" Background="#232323">
+            <TextBlock x:Name="FileNameLabel" Text="" FontSize="13" FontWeight="SemiBold" HorizontalAlignment="Center" Margin="0,0,0,8" Foreground="#eee" />
             <StackPanel Orientation="Horizontal" Margin="0,0,0,8" VerticalAlignment="Center">
                 <Button x:Name="PlayPauseButton" Width="36" Height="36" Margin="0,0,8,0"
                         Click="PlayPause_Click"
-                        Style="{DynamicResource AccentButtonStyle}"
                         FocusVisualStyle="{x:Null}"
                         Padding="0"
-                        BorderThickness="0">
-                    <iconPacks:PackIconMaterial x:Name="PlayPauseIcon" Kind="Play" Width="28" Height="28" Foreground="Black"/>
+                        BorderThickness="0"
+                        Background="#31313a"
+                        BorderBrush="#444"
+                        ToolTip="Play/Pause">
+                    <iconPacks:PackIconMaterial x:Name="PlayPauseIcon" Kind="Play" Width="28" Height="28" Foreground="#eee"/>
                 </Button>
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
@@ -33,8 +35,10 @@
                             ValueChanged="SeekBar_ValueChanged"
                             PreviewMouseDown="SeekBar_PreviewMouseDown"
                             PreviewMouseUp="SeekBar_PreviewMouseUp"
-                            FocusVisualStyle="{x:Null}"/>
-                    <TextBlock x:Name="TimeCounter" Text="00:00 / 00:00" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0,0,0" FontFamily="Consolas" FontSize="13"/>
+                            FocusVisualStyle="{x:Null}"
+                            Background="#232323"
+                            Foreground="#eee"/>
+                    <TextBlock x:Name="TimeCounter" Text="00:00 / 00:00" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Margin="8,0,0,0" FontFamily="Consolas" FontSize="13" Foreground="#eee"/>
                 </Grid>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,12,0,0">
@@ -44,14 +48,21 @@
                         Width="140"
                         Height="36"
                         Margin="0,0,12,0"
-                        Visibility="Collapsed" />
+                        Visibility="Collapsed"
+                        Background="#31313a"
+                        Foreground="#eee"
+                        BorderBrush="#444"
+                        BorderThickness="0"/>
                 <Button x:Name="ExportButton"
                         Content="Export to WAV..."
                         Click="Convert_Click"
                         Width="150"
                         Height="36"
                         Margin="0"
-                        />
+                        Background="#31313a"
+                        Foreground="#eee"
+                        BorderBrush="#444"
+                        BorderThickness="0"/>
             </StackPanel>
         </StackPanel>
     </Grid>

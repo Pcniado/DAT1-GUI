@@ -10,8 +10,8 @@
         WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
-    <Border BorderThickness="0,1,0,0" BorderBrush="#EEE">
-        <Grid>
+    <Border BorderThickness="0,1,0,0" BorderBrush="#444" Background="#232323">
+        <Grid Background="#232323">
             <Grid Height="22" Margin="7,7,7,0" VerticalAlignment="Top">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="120" />
@@ -37,14 +37,23 @@
                 <Button x:Name="SearchButton" Content="Search" Grid.Column="2" HorizontalAlignment="Right" Margin="0,0,0,-3" Width="70" Height="22" Click="SearchButton_Click" Panel.ZIndex="-1" />
             </Grid>
 
-            <TextBlock x:Name="ResultsCount" Text="0 results:" Margin="10,47,7,7" VerticalAlignment="Top" />
+            <TextBlock x:Name="ResultsCount" Text="0 results:" Margin="10,47,7,7" VerticalAlignment="Top" Foreground="#eee" />
 
             <Grid Margin="7,70,7,7" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-                <DataGrid x:Name="SearchResults" RowHeaderWidth="0" GridLinesVisibility="None" Background="White" AutoGenerateColumns="false" CanUserSortColumns="true" CanUserAddRows="false" CanUserDeleteRows="false" BorderThickness="1" MouseDoubleClick="SearchResults_MouseDoubleClick" ContextMenu="{StaticResource AssetsListContextMenu}" ContextMenuOpening="SearchResults_ContextMenuOpening">
+                <DataGrid x:Name="SearchResults" RowHeaderWidth="0" GridLinesVisibility="Horizontal" Background="#232323" Foreground="#eee" AutoGenerateColumns="false" CanUserSortColumns="true" CanUserAddRows="false" CanUserDeleteRows="false" BorderThickness="1" MouseDoubleClick="SearchResults_MouseDoubleClick" ContextMenu="{StaticResource AssetsListContextMenu}" ContextMenuOpening="SearchResults_ContextMenuOpening">
+                    <DataGrid.Resources>
+                        <SolidColorBrush x:Key="DataGridRowBackground" Color="#232323"/>
+                        <SolidColorBrush x:Key="DataGridAlternatingRowBackground" Color="#31313a"/>
+                        <SolidColorBrush x:Key="DataGridRowForeground" Color="#eee"/>
+                        <SolidColorBrush x:Key="DataGridCellForeground" Color="#eee"/>
+                        <SolidColorBrush x:Key="DataGridColumnHeaderBackground" Color="#232323"/>
+                        <SolidColorBrush x:Key="DataGridColumnHeaderForeground" Color="#eee"/>
+                        <SolidColorBrush x:Key="DataGridGridLinesBrush" Color="#444"/>
+                    </DataGrid.Resources>
                     <DataGrid.Columns>
                         <DataGridTextColumn Header="File Path" Width="*" Binding="{Binding Path}" IsReadOnly="True" />
                         <DataGridTextColumn Header="Size" Width="80" Binding="{Binding SizeFormatted}" SortMemberPath="Size" IsReadOnly="True" />
-                        <DataGridTextColumn Header="Span" Width="40" Binding="{Binding Span}" IsReadOnly="True" />
+                        <DataGridTextColumn Header="Span" Width="55" Binding="{Binding Span}" IsReadOnly="True" />
                         <DataGridTextColumn Header="Archive" Width="100" Binding="{Binding Archive}" IsReadOnly="True" />
                     </DataGrid.Columns>
                 </DataGrid>

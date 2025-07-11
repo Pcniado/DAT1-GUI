@@ -21,17 +21,17 @@
             <ColumnDefinition Width="3.5*"/>
         </Grid.ColumnDefinitions>
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Left" Grid.Column="0" Margin="32,0,0,0" Width="288" Grid.ColumnSpan="2">
-            <TextBlock Text="DAT1 GUI" FontSize="36" FontWeight="Bold" Margin="0,0,0,8" Foreground="White" FontFamily="Bahnschrift"/>
+            <TextBlock Text="DAT1 GUI" FontSize="36" FontWeight="Bold" Margin="0,0,0,8" Foreground="#eee" FontFamily="Bahnschrift"/>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                <Button x:Name="NewProjectButton" Content="New Project" Width="140" Height="36" Margin="0,0,8,0" Click="NewProjectButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
-                <Button x:Name="LoadProjectButton" Content="Load Project" Width="140" Height="36" Margin="0,0,0,0" Click="LoadProjectButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
+                <Button x:Name="NewProjectButton" Content="New Project" Width="140" Height="36" Margin="0,0,8,0" Click="NewProjectButton_Click" BorderThickness="0" BorderBrush="#444" Background="#31313a" Foreground="#eee" FontWeight="SemiBold"/>
+                <Button x:Name="LoadProjectButton" Content="Load Project" Width="140" Height="36" Margin="0,0,0,0" Click="LoadProjectButton_Click" BorderThickness="0" BorderBrush="#444" Background="#31313a" Foreground="#eee" FontWeight="SemiBold"/>
             </StackPanel>
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,0,0,8">
-                <Button x:Name="BrowseAssetsButton" Content="Browse Assets" Width="140" Height="36" Margin="0,0,8,0" Click="BrowseAssetsButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
-                <Button x:Name="LoadTocButton" Content="Load TOC" Width="140" Height="36" Margin="0,0,0,0" Click="LoadTocButton_Click" BorderThickness="0" BorderBrush="Transparent"/>
+                <Button x:Name="BrowseAssetsButton" Content="Browse Assets" Width="140" Height="36" Margin="0,0,8,0" Click="BrowseAssetsButton_Click" BorderThickness="0" BorderBrush="#444" Background="#31313a" Foreground="#eee" FontWeight="SemiBold"/>
+                <Button x:Name="LoadTocButton" Content="Load TOC" Width="140" Height="36" Margin="0,0,0,0" Click="LoadTocButton_Click" BorderThickness="0" BorderBrush="#444" Background="#31313a" Foreground="#eee" FontWeight="SemiBold"/>
             </StackPanel>
         </StackPanel>
-        <TextBlock x:Name="HoursWastedText" Text="Hours wasted: 0.0" FontSize="13" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16,0,0,8" Foreground="White" Grid.Row="1" Grid.Column="0"/>
+        <TextBlock x:Name="HoursWastedText" Text="Hours wasted: 0.0" FontSize="13" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="16,0,0,8" Foreground="#eee" Grid.Row="1" Grid.Column="0"/>
         <Button x:Name="GitHubButton" Width="48" Height="48" HorizontalAlignment="Right" VerticalAlignment="Bottom" Click="GitHubButton_Click"
                 Background="Transparent" BorderThickness="0" BorderBrush="Transparent" Focusable="False" Grid.Column="1" Grid.RowSpan="2">
             <iconPacks:PackIconSimpleIcons Kind="Github" Width="32" Height="32" Foreground="White"/>

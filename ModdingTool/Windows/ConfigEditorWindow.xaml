@@ -10,7 +10,7 @@
         WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
-    <Grid>
+    <Grid Background="#232323">
         <Grid x:Name="Overlay" Panel.ZIndex="1000" Visibility="Collapsed">
             <Grid.Background>
                 <SolidColorBrush Color="Black" Opacity="0.75"/>
@@ -22,13 +22,13 @@
         <DockPanel>
             <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="8">
                 <TextBlock x:Name="JsonValidityIndicator" Text="Valid" Foreground="Green" VerticalAlignment="Center" Margin="0,0,12,0" Width="60" TextAlignment="Center"/>
-                <Button x:Name="OpenButton" Content="Open..." Width="80" Margin="0,0,8,0" Click="OpenButton_Click" />
-                <Button x:Name="SaveConfigButton" Content="Save as .config" Width="120" Margin="0,0,8,0" Click="SaveConfigButton_Click" />
-                <Button x:Name="SaveJsonButton" Content="Save as JSON" Width="120" Margin="0,0,8,0" Click="SaveJsonButton_Click" />
-                <Button x:Name="AddToModButton" Content="Add to .stage" Width="150" Margin="0,0,8,0" Click="AddToModButton_Click" Visibility="Collapsed" />
-                <TextBlock x:Name="StatusText" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="Gray" />
+                <Button x:Name="OpenButton" Content="Open..." Width="80" Height="36" Margin="0,0,8,0" Click="OpenButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold" />
+                <Button x:Name="SaveConfigButton" Content="Save as .config" Width="120" Height="36" Margin="0,0,8,0" Click="SaveConfigButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold" />
+                <Button x:Name="SaveJsonButton" Content="Save as JSON" Width="120" Height="36" Margin="0,0,8,0" Click="SaveJsonButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold" />
+                <Button x:Name="AddToModButton" Content="Add to .stage" Width="150" Height="36" Margin="0,0,8,0" Click="AddToModButton_Click" Visibility="Collapsed" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold" />
+                <TextBlock x:Name="StatusText" Margin="16,0,0,0" VerticalAlignment="Center" Foreground="#eee" />
             </StackPanel>
-            <avalonedit:TextEditor x:Name="JsonEditor" FontFamily="Consolas" FontSize="14" ShowLineNumbers="True" SyntaxHighlighting="JavaScript" Margin="8">
+            <avalonedit:TextEditor x:Name="JsonEditor" FontFamily="Consolas" FontSize="14" ShowLineNumbers="True" SyntaxHighlighting="JavaScript" Margin="8" Background="#31313a" Foreground="#eee">
                 <avalonedit:TextEditor.ContextMenu>
                     <ContextMenu>
                     </ContextMenu>

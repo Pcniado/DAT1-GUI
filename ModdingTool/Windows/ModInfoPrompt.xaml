@@ -9,7 +9,7 @@
     <Controls:MetroWindow.Resources>
         <SolidColorBrush x:Key="AccentColorBrush" Color="#FF888888"/>
     </Controls:MetroWindow.Resources>
-    <Grid Margin="10">
+    <Grid Margin="10" Background="#232323">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -20,15 +20,15 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <TextBlock Text="Mod Name:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0"/>
+        <TextBlock Text="Mod Name:" Grid.Row="0" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,0" Foreground="#eee"/>
         <TextBox x:Name="ModNameBox" Grid.Row="0" Grid.Column="1" MinWidth="180"/>
 
-        <TextBlock Text="Author:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,10,10,0"/>
+        <TextBlock Text="Author:" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,10,10,0" Foreground="#eee"/>
         <TextBox x:Name="AuthorBox" Grid.Row="1" Grid.Column="1" Margin="0,10,0,0" MinWidth="180"/>
 
         <StackPanel Grid.Row="2" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-            <Button Content="OK" Width="70" Margin="0,0,10,0" Click="Ok_Click"/>
-            <Button Content="Cancel" Width="70" Click="Cancel_Click"/>
+            <Button Content="OK" Width="70" Height="36" Margin="0,0,10,0" Click="Ok_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
+            <Button Content="Cancel" Width="70" Height="36" Click="Cancel_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
         </StackPanel>
     </Grid>
 </Controls:MetroWindow> 

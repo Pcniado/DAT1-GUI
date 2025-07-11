@@ -9,15 +9,15 @@
         WindowTitleBrush="{StaticResource AppTitleBarGradient}"
         BorderThickness="0"
         GlowBrush="{x:Null}">
-	<Border BorderThickness="0,1,0,0" BorderBrush="#EEE">
-		<Grid>
-			<Grid Height="22" Margin="7,7,7,0" VerticalAlignment="Top">
+	<Border BorderThickness="0,1,0,0" BorderBrush="#444">
+		<Grid Background="#232323">
+			<Grid Height="22" Margin="7,7,7,0" VerticalAlignment="Top" Background="#232323">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*" />
 				</Grid.ColumnDefinitions>
 
 				<TextBox x:Name="InputTextBox" Text="" Grid.Column="0" VerticalAlignment="Top" Height="22" Padding="1" KeyUp="InputTextBox_KeyUp" />
-				<TextBlock IsHitTestVisible="False" Text="String to hash" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="3,-1,0,0" Padding="1" Foreground="DarkGray">
+				<TextBlock IsHitTestVisible="False" Text="String to hash" Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left" Margin="3,-1,0,0" Padding="1" Foreground="#aaa">
 					<TextBlock.Style>
 						<Style TargetType="{x:Type TextBlock}">
 							<Setter Property="Visibility" Value="Collapsed"/>
@@ -31,7 +31,7 @@
 				</TextBlock>
 			</Grid>
 
-			<Grid Margin="0,36,0,0" VerticalAlignment="Stretch" Background="#EEE">
+			<Grid Margin="0,36,0,0" VerticalAlignment="Stretch" Background="#31313a">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="7" />
 					<ColumnDefinition Width="80" />
@@ -50,10 +50,10 @@
 					</StackPanel>
 				</CheckBox>
 
-				<TextBlock Text="CRC64:" Grid.Column="3" Margin="3,9,0,0" VerticalAlignment="Top" />
+				<TextBlock Text="CRC64:" Grid.Column="3" Margin="3,9,0,0" VerticalAlignment="Top" Foreground="#eee" />
 				<TextBox x:Name="Crc64TextBox" Text="" Grid.Column="4" VerticalAlignment="Top" Height="22" Padding="1" Margin="0,7,0,0" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
 
-				<TextBlock Text="CRC32:" Grid.Column="6" Margin="3,9,0,0" VerticalAlignment="Top" />
+				<TextBlock Text="CRC32:" Grid.Column="6" Margin="3,9,0,0" VerticalAlignment="Top" Foreground="#eee" />
 				<TextBox x:Name="Crc32TextBox" Text="" Grid.Column="7" VerticalAlignment="Top" Height="22" Padding="1" Margin="0,7,0,0" IsReadOnly="True" IsReadOnlyCaretVisible="True" />
 			</Grid>
 		</Grid>

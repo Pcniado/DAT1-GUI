@@ -10,7 +10,7 @@
         WindowStartupLocation="CenterOwner"
         BorderThickness="0"
         WindowTitleBrush="{DynamicResource AppTitleBarGradient}">
-    <Grid Margin="16">
+    <Grid Margin="16" Background="#232323">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="2*"/>
@@ -19,19 +19,19 @@
         </Grid.RowDefinitions>
         <StackPanel Grid.Row="0" Orientation="Vertical" Margin="0,0,0,8">
             <StackPanel Orientation="Horizontal" HorizontalAlignment="Left">
-                <Button x:Name="SaveScriptButton" Content="Save Script" Width="100" Height="28" Margin="0,0,8,0" Click="SaveScriptButton_Click"/>
-                <Button x:Name="LoadScriptButton" Content="Load Script" Width="100" Height="28" Click="LoadScriptButton_Click"/>
+                <Button x:Name="SaveScriptButton" Content="Save Script" Width="100" Height="28" Margin="0,0,8,0" Click="SaveScriptButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
+                <Button x:Name="LoadScriptButton" Content="Load Script" Width="100" Height="28" Click="LoadScriptButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
             </StackPanel>
-            <TextBlock Text="Python Script:" FontWeight="Bold" Margin="0,8,0,4"/>
+            <TextBlock Text="Python Script:" FontWeight="Bold" Margin="0,8,0,4" Foreground="#eee"/>
         </StackPanel>
         <avalonedit:TextEditor x:Name="ScriptEditor" Grid.Row="1" FontFamily="Consolas" FontSize="14" ShowLineNumbers="True" SyntaxHighlighting="Python" Margin="0,0,0,8"/>
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,8">
-            <Button x:Name="RunButton" Content="Run Script" Width="120" Height="32" Margin="0,0,8,0" Click="RunButton_Click"/>
-            <Button x:Name="ForceStopButton" Content="Force Stop" Width="120" Height="32" IsEnabled="False" Click="ForceStopButton_Click"/>
+            <Button x:Name="RunButton" Content="Run Script" Width="120" Height="32" Margin="0,0,8,0" Click="RunButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
+            <Button x:Name="ForceStopButton" Content="Force Stop" Width="120" Height="32" IsEnabled="False" Click="ForceStopButton_Click" Background="#31313a" Foreground="#eee" BorderBrush="#444" BorderThickness="0" FontWeight="SemiBold"/>
         </StackPanel>
         <StackPanel Grid.Row="3">
-            <TextBlock Text="Results:" FontWeight="Bold" Margin="0,0,0,4"/>
-            <TextBox x:Name="ResultsTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" IsReadOnly="True" Height="120"/>
+            <TextBlock Text="Results:" FontWeight="Bold" Margin="0,0,0,4" Foreground="#eee"/>
+            <TextBox x:Name="ResultsTextBox" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" IsReadOnly="True" Height="120" Background="#31313a" Foreground="#eee"/>
         </StackPanel>
     </Grid>
 </Controls:MetroWindow> 

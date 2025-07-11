@@ -55,7 +55,16 @@
 			</Grid>
 
 			<Grid Margin="7,98,7,40" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-				<DataGrid x:Name="AssetsList" RowHeaderWidth="0" GridLinesVisibility="None" Background="White" AutoGenerateColumns="false" CanUserSortColumns="true" CanUserAddRows="false" CanUserDeleteRows="false" BorderThickness="1" KeyUp="AssetsList_KeyUp">
+				<DataGrid x:Name="AssetsList" RowHeaderWidth="0" GridLinesVisibility="Horizontal" Background="#232323" Foreground="#eee" AutoGenerateColumns="false" CanUserSortColumns="true" CanUserAddRows="false" CanUserDeleteRows="false" BorderThickness="1" KeyUp="AssetsList_KeyUp">
+					<DataGrid.Resources>
+						<SolidColorBrush x:Key="DataGridRowBackground" Color="#232323"/>
+						<SolidColorBrush x:Key="DataGridAlternatingRowBackground" Color="#31313a"/>
+						<SolidColorBrush x:Key="DataGridRowForeground" Color="#eee"/>
+						<SolidColorBrush x:Key="DataGridCellForeground" Color="#eee"/>
+						<SolidColorBrush x:Key="DataGridColumnHeaderBackground" Color="#232323"/>
+						<SolidColorBrush x:Key="DataGridColumnHeaderForeground" Color="#eee"/>
+						<SolidColorBrush x:Key="DataGridGridLinesBrush" Color="#444"/>
+					</DataGrid.Resources>
 					<DataGrid.Columns>
 						<DataGridTemplateColumn Header="Original Asset Name" Width="*" IsReadOnly="True" SortMemberPath="OriginalAssetName" CanUserSort="true">
 							<DataGridTemplateColumn.CellTemplate>

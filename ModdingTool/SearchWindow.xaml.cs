@@ -200,4 +200,17 @@ public partial class SearchWindow: MetroWindow {
 	}
 
 	#endregion
+
+	// Helper to format Name/ID for WEMs and others
+	private string GetNameId(Asset asset) {
+		// WEM heuristic: high bits of ID
+		bool isWem = (asset.Id & 0xFFFFFFFF00000000) == 0xE000000000000000;
+		if (isWem) {
+			string wemName = asset.Name ?? "(unknown)";
+			return $"{wemName} [{asset.Id:X016}]";
+		} else {
+			string name = asset.Name ?? asset.FullPath ?? "(unknown)";
+			return $"{name} [{asset.Id:X016}]";
+		}
+	}
 }

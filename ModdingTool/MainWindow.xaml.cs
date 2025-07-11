@@ -719,7 +719,7 @@ namespace ModdingTool {
 					}
 					else
 					{
-						asset.Name = $"{wemNumber}.wem | [{asset.Archive}]";
+						asset.Name = $"{wemNumber}.wem"; 
 						AddPath($"[WEM]\\{asset.Archive}", i);
 					}
 				} else {
@@ -798,14 +798,13 @@ namespace ModdingTool {
 		#region common
 
 		private void ShowAssetsFromFolder(string path, int dirs) {
+			if (_assetsByPath == null || _displayedAssetList == null) return;
 			_displayedAssetList.Clear();
 			List<Asset> assetList = new();
-
 			if (_assetsByPath.ContainsKey(path)) {
 				foreach (var index in GetAssetIndices(path)) {
-					assetList.Add(_assets[index]);
+					if (index >= 0 && index < _assets.Count) assetList.Add(_assets[index]);
 				}
-
 				assetList.Sort((x, y) => {
 					if (x.Name == y.Name) {
 						return x.Span - y.Span;
@@ -813,8 +812,8 @@ namespace ModdingTool {
 					return x.Name.CompareTo(y.Name);
 				});
 			}
-
 			foreach (var asset in assetList) {
+				if (asset?.Name == null) continue;
 				if (Path.GetExtension(asset.Name).Equals(".texture", StringComparison.OrdinalIgnoreCase) && asset.Span == 1)
 				{
 					var hdAsset = new Asset
@@ -834,29 +833,27 @@ namespace ModdingTool {
 					_displayedAssetList.Add(asset);
 				}
 			}
-
 			AssetsList.ItemsSource = _displayedAssetList;
-
 			// update status bar
-
-			CurrentPath.Text = $"Selected directory: {path}";
+			if (CurrentPath != null)
+				CurrentPath.Text = $"Selected directory: {path}";
 			var hint = "";
 			if (dirs > 0) {
 				hint = $"{dirs} director" + (dirs > 1 ? "ies" : "y");
 			}
-
 			if (hint == "" || assetList.Count > 0) {
 				if (hint != "") hint += ", ";
 				hint += $"{assetList.Count} asset" + (assetList.Count == 1 ? "" : "s");
 			}
-			DirectoryDetails.Text = hint;
+			if (DirectoryDetails != null)
+				DirectoryDetails.Text = hint;
 		}
 
 		private void ShowAssetsFromFolder(string path) {
+			if (Folders == null || Folders.Items == null) return;
 			var parts = path.Split('\\');
 			TreeViewItem currentNode = null;
 			var currentItems = Folders.Items;
-
 			var actualPath = "";
 			foreach (var part in parts) {
 				var found = false;
@@ -868,20 +865,17 @@ namespace ModdingTool {
 						break;
 					}
 				}
-
 				if (found) { actualPath = Path.Combine(actualPath, part); } else break;
 			}
-
 			if (path != "/" && actualPath == "") {
 				ShowAssetsFromFolder("/");
 				return;
 			}
-
 			if (currentNode != null) {
 				currentNode.IsSelected = true;
 				currentNode.BringIntoView();
 			}
-			ShowAssetsFromFolder(actualPath, currentItems.Count);
+			ShowAssetsFromFolder(actualPath, currentItems?.Count ?? 0);
 		}
 
 		private void JumpTo(string path) {
@@ -1576,11 +1570,10 @@ namespace ModdingTool {
 				{
 					exportItem.Visibility = Visibility.Collapsed;
 				}
-			}
+			}//this still sucks
 			AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
 			if (selected == 1 && AssetsList.SelectedItem is Asset asset) {
 				string assetName = asset.Name;
-				// Always show PlayWem/ExportWemToWav for .wem files (event or id based)
 				bool isWem = assetName.EndsWith(".wem") || assetName.Contains(".wem | ");
 				if (isWem) {
 					AssetsListContextMenu.PlayWem.Visibility = Visibility.Visible;
@@ -1590,7 +1583,6 @@ namespace ModdingTool {
 				} else {
 					AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
 					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
-					// Only show texture options for non-WEMs
 					bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
 					if (isTexture) {
 						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
@@ -2608,7 +2600,7 @@ namespace ModdingTool {
 				if (wemProgress % 1000 == 0)
 				{
 					Dispatcher.Invoke(() => {
-						OverlayHeaderLabel.Text = $"Parsing {WemEventNamesFileName}...";
+						OverlayHeaderLabel.Text = $"Loading {WemEventNamesFileName}...";
 						OverlayOperationLabel.Text = $"{wemProgress}/{wemTotal} lines";
 					});
 				}
