@@ -239,43 +239,41 @@ namespace ModdingTool {
 			string gameFolder = null;
 			string detectedGameId = null;
 
-			// i20: asset_archive/toc
 			string i20Toc = Path.Combine(baseDir, "asset_archive", "toc");
-			if (File.Exists(i20Toc)) {
+			if (File.Exists(i20Toc) && !baseDir.EndsWith("asset_archive")) {
 				tocPath = i20Toc;
 				gameFolder = baseDir;
-				// Try to detect game by exe
-				if (File.Exists(Path.Combine(baseDir, "MilesMorales.exe"))) detectedGameId = "msmr";
-				else if (File.Exists(Path.Combine(baseDir, "MM.exe"))) detectedGameId = "mm";
+				if (File.Exists(Path.Combine(baseDir, "Spider-Man.exe"))) detectedGameId = "msmr";
+				else if (File.Exists(Path.Combine(baseDir, "MilesMorales.exe"))) detectedGameId = "mm";
 			}
-			// i29+: toc in game folder
 			else if (File.Exists(Path.Combine(baseDir, "toc"))) {
 				tocPath = Path.Combine(baseDir, "toc");
 				gameFolder = baseDir;
 				if (File.Exists(Path.Combine(baseDir, "RiftApart.exe"))) detectedGameId = "rcra";
 				else if (File.Exists(Path.Combine(baseDir, "Spider-Man2.exe"))) detectedGameId = "msm2";
 				else if (File.Exists(Path.Combine(baseDir, "i33.exe"))) detectedGameId = "i33";
+				else if (File.Exists(Path.Combine(baseDir, "i30.exe"))) detectedGameId = "i30";
+				else if (File.Exists(Path.Combine(baseDir, "i29.exe"))) detectedGameId = "i29";
 			}
-			// fallback: toc.BAK in game folder
 			else if (File.Exists(Path.Combine(baseDir, "toc.BAK"))) {
 				tocPath = Path.Combine(baseDir, "toc.BAK");
 				gameFolder = baseDir;
 			}
 			else {
-				// Not found
 				return;
 			}
+
+			if (string.IsNullOrEmpty(tocPath) || !File.Exists(tocPath)) return;
+			if (string.IsNullOrEmpty(gameFolder) || !Directory.Exists(gameFolder)) return;
 
 			_recentPaths.Remove(baseDir);
 			_recentPaths.Insert(0, baseDir);
 			SaveRecentTxt();
 
-			// Store gameFolder and gameId for later use
 			_gamePath = gameFolder;
 			if (!string.IsNullOrEmpty(detectedGameId))
 				_gameId = detectedGameId;
 
-			// Save project if loaded (to persist gameId/gamePath)
 			SaveProjectIfLoaded();
 
 			Thread thread = new(() => LoadTOC(tocPath));
@@ -416,8 +414,8 @@ namespace ModdingTool {
                         }
                     }
                     else if (magic == 0x34E89035)
-                    { // TOC_I29 (RCRA/MSM2/i33)
-                        string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe" };
+                    { // TOC_I29 (RCRA/MSM2/i33/i30)
+                        string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe", "i30.exe" };
                         foreach (var exe in exes)
                         {
                             if (File.Exists(Path.Combine(exeSearchDir, exe)))
@@ -434,7 +432,7 @@ namespace ModdingTool {
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
                         }
-                        else if (exeName == "Spider-Man2.exe")
+                        else if (exeName == "Spider-Man2.exe" || exeName == "i30.exe")
                         {
                             hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
                             hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i30.txt");
@@ -451,6 +449,10 @@ namespace ModdingTool {
                             needDownload = !File.Exists(hashesTarget);
                         }
                     }
+                }
+                if (gameDetected && needDownload && hashesUrl != null && hashesTarget != null) {
+                    string altPath = Path.Combine("ModdingTool", Path.GetFileName(hashesTarget));
+                    needDownload = !(File.Exists(hashesTarget) || File.Exists(altPath));
                 }
                 if (gameDetected && needDownload && hashesUrl != null && hashesTarget != null)
                 {
@@ -496,7 +498,6 @@ namespace ModdingTool {
                             }
                         }
                     }
-                    // fix for the file not being released
                     bool fileReady = false;
                     for (int attempt = 0; attempt < 10; attempt++)
                     {
@@ -785,12 +786,10 @@ namespace ModdingTool {
 			if (toc_i29.Load(tocPath)) {
 				return toc_i29;
 			}
-
 			TOC_I20 toc_i20 = new();
 			if (toc_i20.Load(tocPath)) {
 				return toc_i20;
 			}
-
 			return null;
 		}
 
@@ -1654,6 +1653,7 @@ namespace ModdingTool {
 
 		private void ContextMenu_EditConfig(object sender, ExecutedRoutedEventArgs e) {
 			AssetsListContextMenuClicked("EditConfig", AssetsList.SelectedItems);
+
 		}
 
 		private void ContextMenu_PlayWem(object sender, ExecutedRoutedEventArgs e)
