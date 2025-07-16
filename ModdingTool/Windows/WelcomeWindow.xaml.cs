@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using ModdingTool.Utils;
 using ModdingTool.Windows;
+using System.Threading;
 
 namespace ModdingTool.Windows
 {
@@ -110,18 +111,10 @@ namespace ModdingTool.Windows
             {
                 try
                 {
-                    var mainWindow = new ModdingTool.MainWindow();
+                    var mainWindow = new ModdingTool.MainWindow(false);
                     mainWindow.Show();
-                    // Call StartLoadTOCThread directly
-                    var method = mainWindow.GetType().GetMethod("StartLoadTOCThread", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                    if (method != null)
-                    {
-                        method.Invoke(mainWindow, new object[] { dialog.FileName });
-                    }
-                    else
-                    {
-                        new CustomMessageBox("Failed to find TOC loading method.", "Error").ShowDialog();
-                    }
+                    mainWindow.StartLoadTOCThread(dialog.FileName);
+
                     this.Close();
                 }
                 catch (System.Exception ex)
