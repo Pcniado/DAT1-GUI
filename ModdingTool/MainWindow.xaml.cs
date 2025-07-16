@@ -252,12 +252,14 @@ namespace ModdingTool {
 				else if (File.Exists(Path.Combine(baseDir, "i30.exe"))) detectedGameId = "i30";
 				else if (File.Exists(Path.Combine(baseDir, "i29.exe"))) detectedGameId = "i29";
 			}
-			else if (File.Exists(Path.Combine(baseDir, "toc.BAK"))) {
-				tocPath = Path.Combine(baseDir, "toc.BAK");
-				gameFolder = baseDir;
-			}
 			else {
 				return;
+			}
+
+			// Default to backup toc if possible
+			string backupToc = Path.Combine(baseDir, "toc.BAK");
+			if (File.Exists(backupToc)) {
+				tocPath = backupToc;
 			}
 
 			if (string.IsNullOrEmpty(tocPath) || !File.Exists(tocPath)) return;
