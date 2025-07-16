@@ -70,88 +70,85 @@ namespace ModdingTool {
 		private const string AssetNamesFileName = "hashes_i30.txt";
 		private const string AssetNamesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
 
-		public MainWindow() {
-			InitializeComponent();
-			this.Activated += OnActivated;
-			this.Deactivated += OnDeactivated;
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetToStageCommand, ContextMenu_ExtractAssetToStage));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetCommand, ContextMenu_ReplaceAsset));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetsCommand, ContextMenu_ReplaceAssets));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ViewTextureCommand, ContextMenu_ViewTexture));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportTextureCommand, ContextMenu_ExportTexture));
+        public MainWindow() {
+            InitializeComponent();
+            InitializeMainWindow();
 
-			UpdateProjectSettingsMenuItemState();
+            if (_recentPaths.Count > 0) {
+                StartLoadTOCThread(_recentPaths[0]);
+            }
+        }
 
-			StartTickThread();
-			LoadSettings();
+        public MainWindow(string projectFolder, string modName, string author, bool isNewProject = false) {
+            InitializeComponent();
+            InitializeMainWindow();
 
-			if (_recentPaths.Count > 0 ) {
-				StartLoadTOCThread(_recentPaths[0]);	
-			}
-		}
+            _currentProjectFolder = projectFolder;
+            _currentModName = modName;
+            _currentAuthor = author;
+            _replacedAssets.Clear();
 
-		public MainWindow(string projectFolder, string modName, string author, bool isNewProject = false)
-		{
-			InitializeComponent();
-			this.Activated += OnActivated;
-			this.Deactivated += OnDeactivated;
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetToStageCommand, ContextMenu_ExtractAssetToStage));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetCommand, ContextMenu_ReplaceAsset));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ReplaceAssetsCommand, ContextMenu_ReplaceAssets));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ViewTextureCommand, ContextMenu_ViewTexture));
-			CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportTextureCommand, ContextMenu_ExportTexture));
+            var stageJsonPath = Path.Combine(projectFolder, "stage.json");
+            if (File.Exists(stageJsonPath)) {
+                var json = File.ReadAllText(stageJsonPath);
+                var project = System.Text.Json.JsonSerializer.Deserialize<ModdingTool.Structs.ModProject>(json);
+                if (project != null) {
+                    _gameId = project.GameId;
+                    _gamePath = project.GamePath;
+                }
+            }
 
-			UpdateProjectSettingsMenuItemState();
+            SetProjectDirty(false);
+            UpdateWindowTitle();
+            ShowAssetsFromFolder("");
+            AddRecentProject(projectFolder);
 
-			StartTickThread();
-			LoadSettings();
+            if (!string.IsNullOrEmpty(_gamePath)) {
+                var tocPath = Path.Combine(_gamePath, "toc");
+                if (File.Exists(tocPath)) {
+                    StartLoadTOCThread(tocPath);
+                    _lastLoadedTocPath = tocPath;
+                }
+            }
 
-			_currentProjectFolder = projectFolder;
-			_currentModName = modName;
-			_currentAuthor = author;
-			_replacedAssets.Clear();
-			var stageJsonPath = System.IO.Path.Combine(projectFolder, "stage.json");
-			if (File.Exists(stageJsonPath))
-			{
-				var json = System.IO.File.ReadAllText(stageJsonPath);
-				var project = System.Text.Json.JsonSerializer.Deserialize<ModdingTool.Structs.ModProject>(json);
-				_gameId = project.GameId;
-				_gamePath = project.GamePath;
-			}
-			SetProjectDirty(false);
-			UpdateWindowTitle();
-			ShowAssetsFromFolder("");
-			AddRecentProject(projectFolder);
-			if (!string.IsNullOrEmpty(_gamePath))
-			{
-				var tocPath = System.IO.Path.Combine(_gamePath, "toc");
-				if (File.Exists(tocPath))
-				{
-					StartLoadTOCThread(tocPath);
-					_lastLoadedTocPath = tocPath;
-				}
-			}
-			if (isNewProject)
-			{
-				this.Loaded += (s, e) => {
-					ShowCustomMessageBox($"Created new project at: {_currentProjectFolder}", "New Project");
-				};
-			}
-		}
+            if (isNewProject) {
+                Loaded += (s, e) =>
+                {
+                    ShowCustomMessageBox($"Created new project at: {_currentProjectFolder}", "New Project");
+                };
+            }
+        }
 
-		private void OnActivated(object sender, EventArgs e)
+        private void InitializeMainWindow() {
+            this.Activated += OnActivated;
+            this.Deactivated += OnDeactivated;
+
+            // Add all context menu command bindings
+            var bindings = new (ICommand command, ExecutedRoutedEventHandler handler)[]
+            {
+            (AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset),
+            (AssetsListContextMenu.ExtractAssetToStageCommand, ContextMenu_ExtractAssetToStage),
+            (AssetsListContextMenu.ReplaceAssetCommand, ContextMenu_ReplaceAsset),
+            (AssetsListContextMenu.ReplaceAssetsCommand, ContextMenu_ReplaceAssets),
+            (AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath),
+            (AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef),
+            (AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig),
+            (AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem),
+            (AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav),
+            (AssetsListContextMenu.ViewTextureCommand, ContextMenu_ViewTexture),
+            (AssetsListContextMenu.ExportTextureCommand, ContextMenu_ExportTexture)
+            };
+
+            foreach (var (command, handler) in bindings) {
+                CommandBindings.Add(new CommandBinding(command, handler));
+            }
+
+            UpdateProjectSettingsMenuItemState();
+            StartTickThread();
+            LoadSettings();
+        }
+
+        private void OnActivated(object sender, EventArgs e)
 		{
             this.WindowTitleBrush = (System.Windows.Media.Brush)FindResource("AppTitleBarGradient");
         }
