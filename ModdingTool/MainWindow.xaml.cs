@@ -562,16 +562,22 @@ namespace ModdingTool {
 						hasHeader = (((TOC_I29)_toc).SizesSection.Values[i].HeaderOffset != -1);
 					}
 
-					_assets.Add(new Asset {
-						Span = spanIndex,
-						Id = _toc.AssetIdsSection.Values[i],
-						Size = (uint)_toc.GetSizeInArchiveByAssetIndex(i),
-						HasHeader = hasHeader,
-						Name = "",
-						Archive = archiveNames[(int)_toc.GetArchiveIndexByAssetIndex(i)]
-					});
+                    var archiveIdxNullable = _toc.GetArchiveIndexByAssetIndex(i);
+                    int archiveIdx = archiveIdxNullable.HasValue ? (int)archiveIdxNullable.Value : -1;
+                    string archiveName = (archiveIdx >= 0 && archiveIdx < archiveNames.Count) ? archiveNames[archiveIdx] : "-";
 
-					++progress;
+                    _assets.Add(new Asset
+                    {
+                        Span = spanIndex,
+                        Id = _toc.AssetIdsSection.Values[i],
+                        Size = (uint)_toc.GetSizeInArchiveByAssetIndex(i),
+                        HasHeader = hasHeader,
+                        Name = "",
+                        Archive = archiveName
+                    });
+
+
+                    ++progress;
 					if (progress % 1000 == 0) {
 						Dispatcher.Invoke(() => {
 							OverlayHeaderLabel.Text = "Loading 'toc'...";
@@ -2559,7 +2565,6 @@ namespace ModdingTool {
 					return;
 				}
 			}
-			// --- Parse hashes_i30_wems.txt with progress overlay ---
 			_wemEventInfo.Clear();
 			_soundbankWems.Clear();
 			string currentSoundbank = null;
@@ -2610,13 +2615,12 @@ namespace ModdingTool {
 			});
 		}
 
-		// Fix PlayWem/ExportWemToWav logic to extract correct WEM ID from asset, even if name is EVENT_NAME.wem
+
 		private uint? GetWemIdFromAsset(Asset asset)
 		{
 			// If asset.Id is a WEM, return its lower 32 bits
 			if ((asset.Id & 0xFFFFFFFF00000000) == 0xE000000000000000)
 				return (uint)(asset.Id & 0xFFFFFFFF);
-			// Otherwise, try to parse from name (for fallback)
 			var name = asset.Name;
 			if (name != null && name.Contains(".wem"))
 			{
