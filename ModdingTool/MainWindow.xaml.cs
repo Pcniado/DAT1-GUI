@@ -70,13 +70,11 @@ namespace ModdingTool {
 		private const string AssetNamesFileName = "hashes_i30.txt";
 		private const string AssetNamesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
 
-        public MainWindow() {
+        public MainWindow(bool loadRecent = true) {
             InitializeComponent();
             InitializeMainWindow();
 
-            if (_recentPaths.Count > 0) {
-                StartLoadTOCThread(_recentPaths[0]);
-            }
+			if(loadRecent == true && _recentPaths.Count > 0) StartLoadTOCThread(_recentPaths[0]);
         }
 
         public MainWindow(string projectFolder, string modName, string author, bool isNewProject = false) {
@@ -223,7 +221,7 @@ namespace ModdingTool {
 		#endregion
 		#region load toc
 
-		private void StartLoadTOCThread(string path) {
+		public void StartLoadTOCThread(string path) {
 			string baseDir = path;
 			if (File.Exists(path)) {
 				baseDir = Path.GetDirectoryName(path);
