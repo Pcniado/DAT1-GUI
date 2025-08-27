@@ -701,10 +701,14 @@ namespace ModdingTool {
 			var unknown = root.Children["[UNKNOWN]"];
 			var wemsRoot = root.Children["[WEM]"];
 			
-			foreach (var soundbank in _soundbankWems.Keys)
+			// Only create soundbank folders for i30 games
+			if (IsGameVersionI30())
 			{
-				if (!wemsRoot.Children.ContainsKey(soundbank))
-					wemsRoot.Children[soundbank] = new TreeNode();
+				foreach (var soundbank in _soundbankWems.Keys)
+				{
+					if (!wemsRoot.Children.ContainsKey(soundbank))
+						wemsRoot.Children[soundbank] = new TreeNode();
+				}
 			}
 
 			for (var i = 0; i < _assets.Count; ++i) {
@@ -716,7 +720,7 @@ namespace ModdingTool {
 
 				if (isWem) {
 					var wemNumber = (uint)(assetId & 0xFFFFFFFF);
-					if (_wemEventInfo.TryGetValue(wemNumber, out var wemInfo))
+					if (IsGameVersionI30() && _wemEventInfo.TryGetValue(wemNumber, out var wemInfo))
 					{
 						asset.Name = $"{wemInfo.EventName}.wem";
 						AddPath($"[WEM]\\{wemInfo.Soundbank}", i);
@@ -1284,7 +1288,7 @@ namespace ModdingTool {
 
 		private void Search_Search_Click(object sender, RoutedEventArgs e) {
 			if (_searchWindow == null) {
-				_searchWindow = new SearchWindow(_assets, _assetsByPath, JumpTo, AssetsListContextMenuClicked);
+				_searchWindow = new SearchWindow(_assets, _assetsByPath, JumpTo, AssetsListContextMenuClicked, _gameId);
 				_searchWindow.Closed += (object? sender, EventArgs e) => {
 					_searchWindow = null;
 				};
@@ -1450,6 +1454,17 @@ namespace ModdingTool {
             win.Show();
         }
 
+        private bool IsGameVersionI29OrHigher()
+        {
+            if (string.IsNullOrEmpty(_gameId)) return false;
+            return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "msm2" || _gameId == "rcra";
+        }
+
+        private bool IsGameVersionI30()
+        {
+            return _gameId == "i30";
+        }
+
         #endregion
         #region folders view
 
@@ -1580,13 +1595,15 @@ namespace ModdingTool {
 				if (isWem) {
 					AssetsListContextMenu.PlayWem.Visibility = Visibility.Visible;
 					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Visible;
+					AssetsListContextMenu.PlayWem.IsEnabled = true;
+					AssetsListContextMenu.ExportWemToWav.IsEnabled = true;
 					AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
 					AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
 				} else {
 					AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
 					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
 					bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
-					if (isTexture) {
+					if (isTexture && IsGameVersionI29OrHigher()) {
 						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
 						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
 					} else {
@@ -1594,7 +1611,7 @@ namespace ModdingTool {
 						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
 					}
 				}
-				if (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false)
+				if ((asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false) && IsGameVersionI29OrHigher())
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
 				else
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
@@ -1786,7 +1803,7 @@ namespace ModdingTool {
 				{
 					if (isHD)
 					{
-						// Extract SD (span 0) and HD (span 1)
+					
 						var sdAsset = _assets.FirstOrDefault(a => a.Name == baseName && a.Span == 0);
 						if (sdAsset != null)
 						{
@@ -1795,7 +1812,7 @@ namespace ModdingTool {
 						}
 						var hdBytes = _toc.GetAssetBytes(asset.Span, asset.Id);
 						File.WriteAllBytes(tempHDTexture, hdBytes);
-						// Ask user for export location (folder)
+	
 						var dlg = new Microsoft.Win32.SaveFileDialog
 						{
 							Filter = "Texture files (*.texture)|*.texture",
@@ -2322,6 +2339,12 @@ namespace ModdingTool {
         private void UpdateProjectSettingsMenuItemState()
         {
             ProjectSettingsMenuItem.IsEnabled = !string.IsNullOrEmpty(_currentProjectFolder);
+            
+            // Update tools menu based on game version
+            bool isI29OrHigher = IsGameVersionI29OrHigher();
+            Tools_ConfigEditor.IsEnabled = isI29OrHigher;
+            Tools_TextureViewer.IsEnabled = isI29OrHigher;
+            Tools_WemPlayer.IsEnabled = true; // Available for all games
         }
 
         private void EditConfig_Click(object sender, RoutedEventArgs e)

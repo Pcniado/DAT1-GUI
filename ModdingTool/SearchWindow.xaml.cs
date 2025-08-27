@@ -35,7 +35,9 @@ public partial class SearchWindow: MetroWindow {
 		public string RefPath { get => $"{Span}/{Id:X016}"; }
 	}
 
-	public SearchWindow(List<Asset> assets, Dictionary<string, List<int>> assetsByPath, System.Action<string> callback, System.Action<string, System.Collections.IList> contextMenuCallback) {
+	private string? _gameId;
+
+	public SearchWindow(List<Asset> assets, Dictionary<string, List<int>> assetsByPath, System.Action<string> callback, System.Action<string, System.Collections.IList> contextMenuCallback, string? gameId = null) {
 		InitializeComponent();
 		this.Activated += OnActivated;
 		this.Deactivated += OnDeactivated;
@@ -43,6 +45,7 @@ public partial class SearchWindow: MetroWindow {
 		_assetsByPath = assetsByPath;
 		_callback = callback;
 		_contextMenuCallback = contextMenuCallback;
+		_gameId = gameId;
 
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetCommand, ContextMenu_ExtractAsset));
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExtractAssetToStageCommand, ContextMenu_ExtractAssetToStage));
@@ -156,11 +159,68 @@ public partial class SearchWindow: MetroWindow {
 	private void SearchResults_ContextMenuOpening(object sender, ContextMenuEventArgs e) {
 		var selected = SearchResults.SelectedItems.Count;
 		AssetsListContextMenu.HandleContextMenuOpening(sender, e, selected);
-		// Show EditConfig only for a single .config file
-		if (selected == 1 && SearchResults.SelectedItem is SearchResult result && (result.Path?.EndsWith(".config", System.StringComparison.OrdinalIgnoreCase) ?? false))
-			AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
+		
+		if (selected == 1 && SearchResults.SelectedItem is SearchResult result)
+		{
+			// Handle config files
+			if (result.Path?.EndsWith(".config", System.StringComparison.OrdinalIgnoreCase) ?? false)
+			{
+				bool isI29OrHigher = IsGameVersionI29OrHigher();
+				AssetsListContextMenu.EditConfig.Visibility = isI29OrHigher ? Visibility.Visible : Visibility.Collapsed;
+			}
+			else
+			{
+				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+			}
+			
+			// Handle WEM files
+			bool isWem = result.Path?.EndsWith(".wem", System.StringComparison.OrdinalIgnoreCase) ?? false;
+			if (isWem)
+			{
+				AssetsListContextMenu.PlayWem.Visibility = Visibility.Visible;
+				AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Visible;
+				AssetsListContextMenu.PlayWem.IsEnabled = true;
+				AssetsListContextMenu.ExportWemToWav.IsEnabled = true;
+			}
+			else
+			{
+				AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
+			}
+			
+			// Handle texture files
+			bool isTexture = result.Path?.EndsWith(".texture", System.StringComparison.OrdinalIgnoreCase) ?? false;
+			if (isTexture)
+			{
+				bool isI29OrHigher = IsGameVersionI29OrHigher();
+				AssetsListContextMenu.ViewTexture.Visibility = isI29OrHigher ? Visibility.Visible : Visibility.Collapsed;
+				AssetsListContextMenu.ExportTexture.Visibility = isI29OrHigher ? Visibility.Visible : Visibility.Collapsed;
+			}
+			else
+			{
+				AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
+				AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
+			}
+		}
 		else
+		{
 			AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+			AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
+			AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
+			AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
+			AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
+		}
+	}
+
+	private bool IsGameVersionI29OrHigher()
+	{
+		if (string.IsNullOrEmpty(_gameId)) return false;
+		return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "msm2" || _gameId == "rcra";
+	}
+
+	private bool IsGameVersionI30()
+	{
+		return _gameId == "i30";
 	}
 
 	private void ContextMenu_ExtractAsset(object sender, ExecutedRoutedEventArgs e) {
