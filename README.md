@@ -23,7 +23,7 @@ It is a fork of Tkachov’s original *Modding Tool*, enhanced with additional to
 
 1. Download the latest release from the [Releases](./releases) tab.  
 2. Launch `DAT1-GUI.exe`.  
-3. Open supported files using the File menu.  
+3. Open a toc using the File menu.  
 
 ## Contributions
 
