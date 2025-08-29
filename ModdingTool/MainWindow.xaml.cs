@@ -701,7 +701,6 @@ namespace ModdingTool {
 			var unknown = root.Children["[UNKNOWN]"];
 			var wemsRoot = root.Children["[WEM]"];
 			
-			// Only create soundbank folders for i30 games
 			if (IsGameVersionI30())
 			{
 				foreach (var soundbank in _soundbankWems.Keys)
@@ -1455,7 +1454,7 @@ namespace ModdingTool {
         }
 
         private bool IsGameVersionI29OrHigher()
-        {
+        { // we do not include i31 because its closer to i20 than i30
             if (string.IsNullOrEmpty(_gameId)) return false;
             return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "msm2" || _gameId == "rcra";
         }
@@ -1603,18 +1602,24 @@ namespace ModdingTool {
 					AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;
 					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
 					bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
-					if (isTexture && IsGameVersionI29OrHigher()) {
+					if (isTexture) {
+						bool isI29OrHigher = IsGameVersionI29OrHigher();
 						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
 						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
+						AssetsListContextMenu.ViewTexture.IsEnabled = isI29OrHigher;
+						AssetsListContextMenu.ExportTexture.IsEnabled = isI29OrHigher;
 					} else {
 						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
 						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
 					}
 				}
-				if ((asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false) && IsGameVersionI29OrHigher())
+				if (asset.Name?.EndsWith(".config", StringComparison.OrdinalIgnoreCase) ?? false) {
+					bool isI29OrHigher = IsGameVersionI29OrHigher();
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
-				else
+					AssetsListContextMenu.EditConfig.IsEnabled = isI29OrHigher;
+				} else {
 					AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
+				}
 			} else {
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
 				AssetsListContextMenu.PlayWem.Visibility = Visibility.Collapsed;

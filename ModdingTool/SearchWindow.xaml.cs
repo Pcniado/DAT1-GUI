@@ -54,6 +54,10 @@ public partial class SearchWindow: MetroWindow {
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyPathCommand, ContextMenu_CopyPath));
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.CopyRefCommand, ContextMenu_CopyRef));
 		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.EditConfigCommand, ContextMenu_EditConfig));
+		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.PlayWemCommand, ContextMenu_PlayWem));
+		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportWemToWavCommand, ContextMenu_ExportWemToWav));
+		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ViewTextureCommand, ContextMenu_ViewTexture));
+		CommandBindings.Add(new CommandBinding(AssetsListContextMenu.ExportTextureCommand, ContextMenu_ExportTexture));
 
 //populate asset type
 		var types = new HashSet<string>(_assets.ConvertAll(a => a.AssetType));
@@ -166,14 +170,15 @@ public partial class SearchWindow: MetroWindow {
 			if (result.Path?.EndsWith(".config", System.StringComparison.OrdinalIgnoreCase) ?? false)
 			{
 				bool isI29OrHigher = IsGameVersionI29OrHigher();
-				AssetsListContextMenu.EditConfig.Visibility = isI29OrHigher ? Visibility.Visible : Visibility.Collapsed;
+				AssetsListContextMenu.EditConfig.Visibility = Visibility.Visible;
+				AssetsListContextMenu.EditConfig.IsEnabled = isI29OrHigher;
 			}
 			else
 			{
 				AssetsListContextMenu.EditConfig.Visibility = Visibility.Collapsed;
 			}
 			
-			// Handle WEM files
+
 			bool isWem = result.Path?.EndsWith(".wem", System.StringComparison.OrdinalIgnoreCase) ?? false;
 			if (isWem)
 			{
@@ -193,8 +198,10 @@ public partial class SearchWindow: MetroWindow {
 			if (isTexture)
 			{
 				bool isI29OrHigher = IsGameVersionI29OrHigher();
-				AssetsListContextMenu.ViewTexture.Visibility = isI29OrHigher ? Visibility.Visible : Visibility.Collapsed;
-				AssetsListContextMenu.ExportTexture.Visibility = isI29OrHigher ? Visibility.Visible : Visibility.Collapsed;
+				AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
+				AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
+				AssetsListContextMenu.ViewTexture.IsEnabled = isI29OrHigher;
+				AssetsListContextMenu.ExportTexture.IsEnabled = isI29OrHigher;
 			}
 			else
 			{
@@ -213,7 +220,7 @@ public partial class SearchWindow: MetroWindow {
 	}
 
 	private bool IsGameVersionI29OrHigher()
-	{
+	{// we do not include i31 because its closer to i20 than i30
 		if (string.IsNullOrEmpty(_gameId)) return false;
 		return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "msm2" || _gameId == "rcra";
 	}
@@ -249,6 +256,22 @@ public partial class SearchWindow: MetroWindow {
 
 	private void ContextMenu_EditConfig(object sender, ExecutedRoutedEventArgs e) {
 		_contextMenuCallback("EditConfig", GetSelectedAssets());
+	}
+
+	private void ContextMenu_PlayWem(object sender, ExecutedRoutedEventArgs e) {
+		_contextMenuCallback("PlayWem", GetSelectedAssets());
+	}
+
+	private void ContextMenu_ExportWemToWav(object sender, ExecutedRoutedEventArgs e) {
+		_contextMenuCallback("ExportWemToWav", GetSelectedAssets());
+	}
+
+	private void ContextMenu_ViewTexture(object sender, ExecutedRoutedEventArgs e) {
+		_contextMenuCallback("ViewTexture", GetSelectedAssets());
+	}
+
+	private void ContextMenu_ExportTexture(object sender, ExecutedRoutedEventArgs e) {
+		_contextMenuCallback("ExportTexture", GetSelectedAssets());
 	}
 
 	private List<Asset> GetSelectedAssets() {
