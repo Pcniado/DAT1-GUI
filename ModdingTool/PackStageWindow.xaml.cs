@@ -96,7 +96,7 @@ namespace ModdingTool {
 
 			var selected = _games[0];
 			if (toc is TOC_I29) {
-				selected = _games[3];
+				selected = _games[3]; // Default to Spider-Man 2 for TOC_I29
 			}
 
 			_gameId = selected.Id;

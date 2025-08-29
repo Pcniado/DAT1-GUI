@@ -11,7 +11,7 @@ namespace ModdingTool.Utils
 {
     public static class ProjectHelper
     {
-        public static (string? folder, string? modName, string? author) CreateNewProject(Window owner)
+        public static (string? folder, string? modName, string? author) CreateNewProject(Window owner, string? currentGameId = null, string? currentGamePath = null)
         {
             var dialog = new FolderBrowserDialog();
             dialog.Description = "Select folder for new project";
@@ -34,8 +34,8 @@ namespace ModdingTool.Utils
                 {
                     ModName = prompt.ModName,
                     Author = prompt.Author,
-                    GameId = null,
-                    GamePath = null,
+                    GameId = currentGameId,
+                    GamePath = currentGamePath,
                     Replacements = new System.Collections.Generic.List<ModProject.ReplacementEntry>()
                 };
                 var json = System.Text.Json.JsonSerializer.Serialize(project, new System.Text.Json.JsonSerializerOptions { WriteIndented = true });

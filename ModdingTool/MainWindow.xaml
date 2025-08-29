@@ -48,6 +48,8 @@
                         <MenuItem Header="Open Recent Project" x:Name="OpenRecentProjectMenu">
                             <MenuItem Header="(No recent projects)" IsEnabled="False" x:Name="NoRecentProjectsItem"/>
                         </MenuItem>
+                        <Separator/>
+                        <MenuItem Header="Close Project" Click="CloseProject_Click" x:Name="CloseProjectMenuItem"/>
                         <MenuItem Header="Project Settings" Click="ProjectSettings_Click" x:Name="ProjectSettingsMenuItem"/>
                     </MenuItem>
                     <MenuItem Header="Search">

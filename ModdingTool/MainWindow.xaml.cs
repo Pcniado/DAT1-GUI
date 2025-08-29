@@ -238,14 +238,14 @@ namespace ModdingTool {
 			if (File.Exists(i20Toc) && !baseDir.EndsWith("asset_archive")) {
 				tocPath = i20Toc;
 				gameFolder = baseDir;
-				if (File.Exists(Path.Combine(baseDir, "Spider-Man.exe"))) detectedGameId = "msmr";
-				else if (File.Exists(Path.Combine(baseDir, "MilesMorales.exe"))) detectedGameId = "mm";
+				if (File.Exists(Path.Combine(baseDir, "Spider-Man.exe"))) detectedGameId = "MSMR";
+				else if (File.Exists(Path.Combine(baseDir, "MilesMorales.exe"))) detectedGameId = "MM";
 			}
 			else if (File.Exists(Path.Combine(baseDir, "toc"))) {
 				tocPath = Path.Combine(baseDir, "toc");
 				gameFolder = baseDir;
-				if (File.Exists(Path.Combine(baseDir, "RiftApart.exe"))) detectedGameId = "rcra";
-				else if (File.Exists(Path.Combine(baseDir, "Spider-Man2.exe"))) detectedGameId = "msm2";
+				if (File.Exists(Path.Combine(baseDir, "RiftApart.exe"))) detectedGameId = "RCRA";
+				else if (File.Exists(Path.Combine(baseDir, "Spider-Man2.exe"))) detectedGameId = "MSM2";
 				else if (File.Exists(Path.Combine(baseDir, "i33.exe"))) detectedGameId = "i33";
 				else if (File.Exists(Path.Combine(baseDir, "i30.exe"))) detectedGameId = "i30";
 				else if (File.Exists(Path.Combine(baseDir, "i29.exe"))) detectedGameId = "i29";
@@ -383,8 +383,8 @@ namespace ModdingTool {
                 {
                     uint magic = r.ReadUInt32();
                     if (magic == 0x77AF12AF)
-                    { // TOC_I20 (MSMR/MM)
-                        string[] exes = new[] { "MilesMorales.exe", "MM.exe" };
+                    { // TOC_I20 (i20/i31)
+                        string[] exes = new[] { "Spider-Man.exe", "MilesMorales.exe" };
                         foreach (var exe in exes)
                         {
                             if (File.Exists(Path.Combine(exeSearchDir, exe)))
@@ -400,6 +400,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "MM";
                         }
                         else
                         {
@@ -408,11 +409,12 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "MSMR";
                         }
                     }
                     else if (magic == 0x34E89035)
-                    { // TOC_I29 (RCRA/MSM2/i33/i30)
-                        string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe", "i30.exe" };
+                    { // TOC_I29 (i29/i30/msm2/i33)
+                        string[] exes = new[] { "RiftApart.exe", "Spider-Man2.exe", "i33.exe", "i30.exe", "i29.exe" };
                         foreach (var exe in exes)
                         {
                             if (File.Exists(Path.Combine(exeSearchDir, exe)))
@@ -428,14 +430,25 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "RCRA";
                         }
-                        else if (exeName == "Spider-Man2.exe" || exeName == "i30.exe")
+                        else if (exeName == "Spider-Man2.exe")
                         {
                             hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
                             hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i30.txt");
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "MSM2";
+                        }
+                        else if (exeName == "i30.exe")
+                        {
+                            hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i30.txt";
+                            hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i30.txt");
+                            hashesFileToLoad = hashesTarget;
+                            gameDetected = true;
+                            needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "i30";
                         }
                         else if (exeName == "i33.exe")
                         {
@@ -444,6 +457,16 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "i33";
+                        }
+                        else if (exeName == "i29.exe")
+                        {
+                            hashesUrl = "https://raw.githubusercontent.com/Pcniado/IGHASHES/refs/heads/main/hashes_i29.txt";
+                            hashesTarget = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "hashes_i29.txt");
+                            hashesFileToLoad = hashesTarget;
+                            gameDetected = true;
+                            needDownload = !File.Exists(hashesTarget);
+                            if (string.IsNullOrEmpty(_gameId)) _gameId = "i29";
                         }
                     }
                 }
@@ -1459,10 +1482,35 @@ namespace ModdingTool {
             return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "msm2" || _gameId == "rcra";
         }
 
-        private bool IsGameVersionI30()
-        {
-            return _gameId == "i30";
-        }
+        		private bool IsGameVersionI30()
+		{
+			return _gameId == "i30";
+		}
+
+		private string DetectGameId(string gamePath)
+		{
+			if (string.IsNullOrEmpty(gamePath) || !Directory.Exists(gamePath))
+				return null;
+
+
+			if (File.Exists(Path.Combine(gamePath, "Spider-Man.exe")))
+				return "MSMR";
+			else if (File.Exists(Path.Combine(gamePath, "MilesMorales.exe")))
+				return "MM";
+
+			else if (File.Exists(Path.Combine(gamePath, "RiftApart.exe")))
+				return "RCRA";
+			else if (File.Exists(Path.Combine(gamePath, "Spider-Man2.exe")))
+				return "MSM2";
+			else if (File.Exists(Path.Combine(gamePath, "i30.exe")))
+				return "i30";
+			else if (File.Exists(Path.Combine(gamePath, "i33.exe")))
+				return "i33";
+			else if (File.Exists(Path.Combine(gamePath, "i29.exe")))
+				return "i29";
+			
+			return null;
+		}
 
         #endregion
         #region folders view
@@ -2146,44 +2194,55 @@ namespace ModdingTool {
 
 		public (string modName, string author, Dictionary<Asset, string> replacedAssets, string gameId, string gamePath) LoadProject(string folderPath)
 		{
-			var json = File.ReadAllText(Path.Combine(folderPath, "stage.json"));
-			var project = System.Text.Json.JsonSerializer.Deserialize<ModProject>(json);
-
-			var replacedAssets = new Dictionary<Asset, string>();
-			var replacementsDir = Path.Combine(folderPath, "replacements");
-
-			foreach (var entry in project.Replacements)
+			try
 			{
-				string relPath = entry.Replacement;
-				string absPath = Path.Combine(folderPath, relPath);
-				string fileToUse = null;
+				var json = File.ReadAllText(Path.Combine(folderPath, "stage.json"));
+				var project = System.Text.Json.JsonSerializer.Deserialize<ModProject>(json);
 
-				if (File.Exists(absPath))
+				var replacedAssets = new Dictionary<Asset, string>();
+				var replacementsDir = Path.Combine(folderPath, "replacements");
+
+				if (project.Replacements != null)
 				{
-					fileToUse = absPath;
-				}
-				else
-				{
-					// Try to find any file in replacements with the same base name (ignore extension)
-					string baseName = Path.GetFileNameWithoutExtension(relPath);
-					if (Directory.Exists(replacementsDir))
+					foreach (var entry in project.Replacements)
 					{
-						var files = Directory.GetFiles(replacementsDir, baseName + ".*");
-						if (files.Length > 0)
-							fileToUse = files[0];
+						string relPath = entry.Replacement;
+						string absPath = Path.Combine(folderPath, relPath);
+						string fileToUse = null;
+
+						if (File.Exists(absPath))
+						{
+							fileToUse = absPath;
+						}
+						else
+						{
+							// Try to find any file in replacements with the same base name (ignore extension)
+							string baseName = Path.GetFileNameWithoutExtension(relPath);
+							if (Directory.Exists(replacementsDir))
+							{
+								var files = Directory.GetFiles(replacementsDir, baseName + ".*");
+								if (files.Length > 0)
+									fileToUse = files[0];
+							}
+						}
+
+						replacedAssets.Add(new Asset
+						{
+							Span = (byte)entry.Span,
+							Id = entry.Id,
+							Name = entry.Name,
+							FullPath = entry.FullPath
+						}, fileToUse); // fileToUse may be null if missing
 					}
 				}
 
-				replacedAssets.Add(new Asset
-				{
-					Span = (byte)entry.Span,
-					Id = entry.Id,
-					Name = entry.Name,
-					FullPath = entry.FullPath
-				}, fileToUse); // fileToUse may be null if missing
+				return (project.ModName, project.Author, replacedAssets, project.GameId, project.GamePath);
 			}
-
-			return (project.ModName, project.Author, replacedAssets, project.GameId, project.GamePath);
+			catch (Exception ex)
+			{
+				ShowCustomMessageBox($"Error loading project: {ex.Message}", "Load Project Error");
+				return (null, null, new Dictionary<Asset, string>(), null, null);
+			}
 		}
 
 		private void SetProjectDirty(bool dirty)
@@ -2280,21 +2339,64 @@ namespace ModdingTool {
 					if (dialog.ShowDialog() == Microsoft.WindowsAPICodePack.Dialogs.CommonFileDialogResult.Ok)
 					{
 						gamePath = dialog.FileName;
-
 					}
 					else return;
 				}
+				
 				_currentModName = modName;
 				_currentAuthor = author;
 				_pendingReplacedAssets = replacedAssets; // store temporarily
 				_gameId = gameId;
 				_gamePath = gamePath;
-				string tocPath = Path.Combine(gamePath, "toc");
-				if (_lastLoadedTocPath == null || !string.Equals(_lastLoadedTocPath, tocPath, StringComparison.OrdinalIgnoreCase))
+				
+				// Try to detect game and load TOC
+				if (!string.IsNullOrEmpty(gamePath) && Directory.Exists(gamePath))
 				{
-					StartLoadTOCThread(tocPath);
-					_lastLoadedTocPath = tocPath;
+					if (string.IsNullOrEmpty(_gameId))
+					{
+						_gameId = DetectGameId(gamePath);
+						if (string.IsNullOrEmpty(_gameId))
+						{
+							ShowCustomMessageBox($"Could not detect game type in folder: {gamePath}\nPlease ensure you selected the correct game folder containing the game executable.", "Game Detection Failed");
+							return;
+						}
+					}
+
+					string tocPath = null;
+					if (Directory.Exists(Path.Combine(gamePath, "asset_archive")) && File.Exists(Path.Combine(gamePath, "asset_archive", "toc")))
+					{
+						// i20/i31 games (Spider-Man Remastered, Miles Morales)
+						tocPath = Path.Combine(gamePath, "asset_archive", "toc");
+					}
+					else if (File.Exists(Path.Combine(gamePath, "toc")))
+					{
+						// i29/i30/i33 games (RCRA, Spider-Man 2, etc.)
+						tocPath = Path.Combine(gamePath, "toc");
+					}
+					else
+					{
+						ShowCustomMessageBox($"No TOC file found in game folder: {gamePath}\nPlease ensure you selected the correct game folder.", "TOC Not Found");
+						return;
+					}
+					
+					if (_lastLoadedTocPath == null || !string.Equals(_lastLoadedTocPath, tocPath, StringComparison.OrdinalIgnoreCase))
+					{
+						StartLoadTOCThread(tocPath);
+						_lastLoadedTocPath = tocPath;
+					}
+					else
+					{
+					
+						if (_pendingReplacedAssets != null)
+						{
+							_replacedAssets = _pendingReplacedAssets;
+							_pendingReplacedAssets = null;
+						
+							Mod_ReplacedItemsCount.Header = $"{_replacedAssets.Count} replaced, {_addedAssets.Count} new";
+						}
+					}
 				}
+				
 				SetProjectDirty(false);
 				UpdateWindowTitle();
 				ShowAssetsFromFolder("");
@@ -2311,7 +2413,7 @@ namespace ModdingTool {
 
 		private void NewProject_Click(object sender, RoutedEventArgs e)
 		{
-			var (folder, modName, author) = ModdingTool.Utils.ProjectHelper.CreateNewProject(this);
+			var (folder, modName, author) = ModdingTool.Utils.ProjectHelper.CreateNewProject(this, _gameId, _gamePath);
 			if (!string.IsNullOrEmpty(folder) && !string.IsNullOrEmpty(modName) && !string.IsNullOrEmpty(author))
 			{
 				OpenProjectByPath(folder);
@@ -2324,6 +2426,40 @@ namespace ModdingTool {
 			if (!string.IsNullOrEmpty(folder))
 			{
 				OpenProjectByPath(folder);
+			}
+		}
+
+		private void CloseProject_Click(object sender, RoutedEventArgs e)
+		{
+			if (!string.IsNullOrEmpty(_currentProjectFolder))
+			{
+				if (_projectDirty)
+				{
+					var result = ShowCustomMessageBox("Project has unsaved changes. Save before closing?", "Save Changes?", true);
+					if (result)
+					{
+						SaveProjectIfLoaded();
+					}
+				}
+				
+				
+				_currentProjectFolder = null;
+				_currentModName = null;
+				_currentAuthor = null;
+				_replacedAssets.Clear();
+				SetProjectDirty(false);
+				
+			
+				UpdateWindowTitle();
+				
+				
+				UpdateProjectSettingsMenuItemState();
+				
+				//ShowCustomMessageBox("Project closed successfully. Game data remains loaded.", "Project Closed");
+			}
+			else
+			{
+				ShowCustomMessageBox("No project is currently open.", "No Project");
 			}
 		}
 
@@ -2343,13 +2479,14 @@ namespace ModdingTool {
 
         private void UpdateProjectSettingsMenuItemState()
         {
-            ProjectSettingsMenuItem.IsEnabled = !string.IsNullOrEmpty(_currentProjectFolder);
+            bool hasProject = !string.IsNullOrEmpty(_currentProjectFolder);
+            ProjectSettingsMenuItem.IsEnabled = hasProject;
+            CloseProjectMenuItem.IsEnabled = hasProject;
             
-            // Update tools menu based on game version
             bool isI29OrHigher = IsGameVersionI29OrHigher();
             Tools_ConfigEditor.IsEnabled = isI29OrHigher;
             Tools_TextureViewer.IsEnabled = isI29OrHigher;
-            Tools_WemPlayer.IsEnabled = true; // Available for all games
+            Tools_WemPlayer.IsEnabled = true; 
         }
 
         private void EditConfig_Click(object sender, RoutedEventArgs e)

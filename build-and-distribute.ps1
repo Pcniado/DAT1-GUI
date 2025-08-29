@@ -116,7 +116,7 @@ This is a .NET 7.0 Windows application for modding Insomniac Games Games (lmao).
 
 Requirements:
 - Windows 10 or later
-- .NET 7.0 Runtime (if not self-contained)
+- .NET 7.0 Runtime
 
 Installation:
 1. Extract all files to a folder of your choice
@@ -124,8 +124,8 @@ Installation:
 3. If you get an error about missing .NET runtime, download and install .NET 7.0 Desktop Runtime from Microsoft
 
 Usage:
-- Use the application to open .toc files from Insomniac Games
-- Supported games: Spider-Man Remastered, Spider-Man Miles Morales, Ratchet And Clank: Rift Apart, Spider-Man 2
+- Use the application to open toc files from Insomniac Games Games (again lmao)
+- Supported games: Spider-Man Remastered (i20), Spider-Man Miles Morales (i31), Ratchet And Clank: Rift Apart (i29), Spider-Man 2 (i30), i33
 
 For more information, see README.md
 "@ | Out-File -FilePath "dist\INSTALLATION.txt" -Encoding UTF8 -ErrorAction Stop
