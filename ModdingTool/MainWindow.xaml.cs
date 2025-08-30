@@ -400,7 +400,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "MM";
+                            _gameId = "MM";
                         }
                         else
                         {
@@ -409,7 +409,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "MSMR";
+                            _gameId = "MSMR";
                         }
                     }
                     else if (magic == 0x34E89035)
@@ -430,7 +430,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "RCRA";
+                            _gameId = "RCRA";
                         }
                         else if (exeName == "Spider-Man2.exe")
                         {
@@ -439,7 +439,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "MSM2";
+                            _gameId = "MSM2";
                         }
                         else if (exeName == "i30.exe")
                         {
@@ -448,7 +448,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "i30";
+                            _gameId = "i30";
                         }
                         else if (exeName == "i33.exe")
                         {
@@ -457,7 +457,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "i33";
+                            _gameId = "i33";
                         }
                         else if (exeName == "i29.exe")
                         {
@@ -466,7 +466,7 @@ namespace ModdingTool {
                             hashesFileToLoad = hashesTarget;
                             gameDetected = true;
                             needDownload = !File.Exists(hashesTarget);
-                            if (string.IsNullOrEmpty(_gameId)) _gameId = "i29";
+                            _gameId = "i29";
                         }
                     }
                 }
@@ -807,6 +807,7 @@ namespace ModdingTool {
 
 
 				ShowAssetsFromFolder("", Folders.Items.Count);
+				UpdateProjectSettingsMenuItemState();
 			});
 		}
 
@@ -885,12 +886,14 @@ namespace ModdingTool {
 			var actualPath = "";
 			foreach (var part in parts) {
 				var found = false;
-				foreach (TreeViewItem item in currentItems) {
-					if ((string)(item.Header) == part) {
-						currentNode = item;
-						currentItems = item.Items;
-						found = true;
-						break;
+				if (currentItems != null) {
+					foreach (TreeViewItem item in currentItems) {
+						if (item?.Header != null && (string)(item.Header) == part) {
+							currentNode = item;
+							currentItems = item.Items;
+							found = true;
+							break;
+						}
 					}
 				}
 				if (found) { actualPath = Path.Combine(actualPath, part); } else break;
@@ -2534,28 +2537,56 @@ namespace ModdingTool {
 
 		private void SearchAndReveal(string assetNameOrPath)
 		{
-			var asset = _assets.FirstOrDefault(a => a.Name == assetNameOrPath || a.FullPath == assetNameOrPath);
-			if (asset == null) return;
-			var path = asset.FullPath ?? asset.Name;
-			var pathParts = path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
-			ItemCollection currentItems = Folders.Items;
-			TreeViewItem currentItem = null;
-			foreach (var part in pathParts)
+			try
 			{
-				currentItem = currentItems
-					.OfType<TreeViewItem>()
-					.FirstOrDefault(i => (string)i.Header == part);
-				if (currentItem == null) return;
-				if (!currentItem.IsExpanded)
-					currentItem.IsExpanded = true; 
-				// trhis forces UI to process expansion
-				System.Windows.Threading.DispatcherFrame frame = new();
-				currentItem.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() => frame.Continue = false));
-				System.Windows.Threading.Dispatcher.PushFrame(frame);
-				currentItems = currentItem.Items;
+				var asset = _assets.FirstOrDefault(a => a.Name == assetNameOrPath || a.FullPath == assetNameOrPath);
+				if (asset == null) return;
+				
+				var path = asset.FullPath ?? asset.Name;
+				if (string.IsNullOrEmpty(path)) return;
+				
+				var pathParts = path.Split(new[] { '\\', '/' }, StringSplitOptions.RemoveEmptyEntries);
+				if (pathParts.Length == 0) return;
+				
+				ItemCollection currentItems = Folders?.Items;
+				if (currentItems == null) return;
+				
+				TreeViewItem currentItem = null;
+				foreach (var part in pathParts)
+				{
+					if (string.IsNullOrEmpty(part)) continue;
+					
+					currentItem = currentItems
+						.OfType<TreeViewItem>()
+						.FirstOrDefault(i => i?.Header != null && (string)i.Header == part);
+					if (currentItem == null) return;
+					
+					if (!currentItem.IsExpanded)
+					{
+						currentItem.IsExpanded = true; 
+						try
+						{
+							System.Windows.Threading.DispatcherFrame frame = new();
+							currentItem.Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, new Action(() => frame.Continue = false));
+							System.Windows.Threading.Dispatcher.PushFrame(frame);
+						}
+						catch
+						{
+						}
+					}
+					currentItems = currentItem.Items;
+					if (currentItems == null) return;
+				}
+				
+				if (currentItem != null)
+				{
+					currentItem.IsSelected = true;
+					currentItem.BringIntoView();
+				}
 			}
-			if (currentItem != null)
-				currentItem.IsSelected = true;
+			catch
+			{
+			}
 		}
 
 		private void DownloadIfMissing(string fileName, string url)
