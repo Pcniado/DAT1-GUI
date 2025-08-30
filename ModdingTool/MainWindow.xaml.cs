@@ -1479,12 +1479,12 @@ namespace ModdingTool {
         private bool IsGameVersionI29OrHigher()
         { // we do not include i31 because its closer to i20 than i30
             if (string.IsNullOrEmpty(_gameId)) return false;
-            return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "msm2" || _gameId == "rcra";
+            return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "MSM2" || _gameId == "RCRA";
         }
 
         		private bool IsGameVersionI30()
 		{
-			return _gameId == "i30";
+			return _gameId == "i30" || _gameId == "MSM2";
 		}
 
 		private string DetectGameId(string gamePath)
