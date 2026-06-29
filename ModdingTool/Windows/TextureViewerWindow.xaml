@@ -8,7 +8,11 @@
         WindowTitleBrush="{DynamicResource AppTitleBarGradient}"
         GlowBrush="{x:Null}"
         BorderThickness="0"
-        BorderBrush="Transparent">
+        BorderBrush="Transparent"
+        AllowDrop="True"
+        Drop="Window_Drop"
+        DragEnter="Window_DragEnter"
+        DragLeave="Window_DragLeave">
 
 	<Controls:MetroWindow.Resources>
 		<Style x:Key="RoundedButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
@@ -59,6 +63,31 @@
                       VerticalScrollBarVisibility="Auto">
 			<Image Name="TextureImage" Stretch="Uniform"/>
 		</ScrollViewer>
+
+		<TextBlock Name="DropHintText"
+                   Grid.Row="1" Grid.Column="0"
+                   Text="Drag and drop a texture here"
+                   Foreground="#777"
+                   FontSize="16"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   IsHitTestVisible="False"/>
+
+		<Border Name="DropOverlay"
+                Grid.Row="0" Grid.RowSpan="3" Grid.Column="0" Grid.ColumnSpan="2"
+                Background="#8031313a"
+                BorderBrush="#5b9bd5"
+                BorderThickness="3"
+                Visibility="Collapsed"
+                IsHitTestVisible="False">
+			<TextBlock Text="Drop to load texture"
+                       Foreground="White"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"/>
+		</Border>
 
 		<!-- Info Sidebar -->
 		<Border Grid.Row="1" Grid.Column="1" Margin="8,16,16,16" Background="#31313a" Padding="12" CornerRadius="8">

@@ -154,6 +154,57 @@ namespace ModdingTool.Windows
             }
         }
 
+        private static bool IsSupportedTextureFile(string filePath)
+        {
+            string ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext == ".dds" || ext == ".tga" || ext == ".texture" || filePath.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void Window_DragEnter(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+                if (files != null && files.Length > 0 && IsSupportedTextureFile(files[0]))
+                {
+                    e.Effects = DragDropEffects.Copy;
+                    DropOverlay.Visibility = Visibility.Visible;
+                    e.Handled = true;
+                    return;
+                }
+            }
+            e.Effects = DragDropEffects.None;
+            e.Handled = true;
+        }
+
+        private void Window_DragLeave(object sender, DragEventArgs e)
+        {
+            DropOverlay.Visibility = Visibility.Collapsed;
+        }
+
+        private void Window_Drop(object sender, DragEventArgs e)
+        {
+            DropOverlay.Visibility = Visibility.Collapsed;
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            if (files == null || files.Length == 0) return;
+
+            var texturePath = files.FirstOrDefault(IsSupportedTextureFile);
+            if (texturePath == null)
+            {
+                MessageBox.Show(
+                    "This viewer currently supports only .dds, .tga, .texture, and .hd.texture files.",
+                    "Unsupported Format",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Information
+                );
+                return;
+            }
+
+            LoadTexture(texturePath);
+        }
+
         public void LoadTexture(string filePath)
         {
             string ext = Path.GetExtension(filePath).ToLowerInvariant();
@@ -287,14 +338,35 @@ namespace ModdingTool.Windows
                 }
 
                 PixelFormat format;
+                byte[] pixelData = image.Data;
+                int pixelStride = image.Stride;
                 try
                 {
-                    format = image.Format switch
+                    switch (image.Format)
                     {
-                        ImageFormat.Rgb24 => PixelFormats.Bgr24,
-                        ImageFormat.Rgba32 => PixelFormats.Bgra32,
-                        _ => throw new Exception($"Unsupported format: {image.Format}")
-                    };
+                        case ImageFormat.Rgb24:
+                            format = PixelFormats.Bgr24;
+                            break;
+                        case ImageFormat.Rgba32:
+                            format = PixelFormats.Bgra32;
+                            break;
+                        case ImageFormat.Rgb8:
+                            format = PixelFormats.Gray8;
+                            break;
+                        case ImageFormat.R5g6b5:
+                            format = PixelFormats.Bgr565;
+                            break;
+                        case ImageFormat.R5g5b5:
+                            format = PixelFormats.Bgr555;
+                            break;
+                        case ImageFormat.Rgba16:
+                            // WPF has no native 4-bit-per-channel format, expand to Bgra32 ourselves
+                            format = PixelFormats.Bgra32;
+                            pixelData = ExpandRgba16ToBgra32(image.Data, width, height, image.Stride, out pixelStride);
+                            break;
+                        default:
+                            throw new Exception($"Unsupported format: {image.Format}");
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -330,7 +402,7 @@ namespace ModdingTool.Windows
                     width, height,
                     96, 96,
                     format, null,
-                    image.Data, image.Stride);
+                    pixelData, pixelStride);
 
                 _originalBitmapSource = bmp;
                 UpdateChannelPreview();
@@ -348,6 +420,7 @@ namespace ModdingTool.Windows
                 TextureImage.Width = double.NaN;
                 TextureImage.Height = double.NaN;
                 StatusText.Text = $"Loaded: {Path.GetFileName(filePath)}";
+                DropHintText.Visibility = Visibility.Collapsed;
 
                 // Update info sidebar with robust info
                 InfoFormat.Text = formatString;
@@ -358,6 +431,33 @@ namespace ModdingTool.Windows
             {
                 MessageBox.Show($"This file could not be loaded:\n\n{ex.Message}", "Load Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             }
+        }
+
+        // Expands Pfim's packed 4-bit-per-channel Rgba16 data into a Bgra32 buffer WPF can render
+        private static byte[] ExpandRgba16ToBgra32(byte[] src, int width, int height, int srcStride, out int dstStride)
+        {
+            dstStride = width * 4;
+            byte[] dst = new byte[height * dstStride];
+            for (int y = 0; y < height; y++)
+            {
+                int srcRow = y * srcStride;
+                int dstRow = y * dstStride;
+                for (int x = 0; x < width; x++)
+                {
+                    byte byte0 = src[srcRow + x * 2];
+                    byte byte1 = src[srcRow + x * 2 + 1];
+                    int b = (byte0 & 0xF) * 17; // scale 0-15 to 0-255
+                    int g = ((byte0 >> 4) & 0xF) * 17;
+                    int r = (byte1 & 0xF) * 17;
+                    int a = ((byte1 >> 4) & 0xF) * 17;
+                    int dstIdx = dstRow + x * 4;
+                    dst[dstIdx + 0] = (byte)b;
+                    dst[dstIdx + 1] = (byte)g;
+                    dst[dstIdx + 2] = (byte)r;
+                    dst[dstIdx + 3] = (byte)a;
+                }
+            }
+            return dst;
         }
 
         // Helper to extract DXGI format from DDS header

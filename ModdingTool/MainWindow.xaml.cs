@@ -887,9 +887,14 @@ namespace ModdingTool {
 			foreach (var part in parts) {
 				var found = false;
 				if (currentItems != null) {
-					foreach (TreeViewItem item in currentItems) {
+					foreach (var rawItem in currentItems) {
+						if (rawItem is not TreeViewItem item) continue; // skip lazy-load dummy null entries
 						if (item?.Header != null && (string)(item.Header) == part) {
 							currentNode = item;
+							// force lazy-loaded children to populate so the walk can continue past this node
+							if (item.Items.Count == 1 && item.Items[0] == null) {
+								Folder_Expanded(item, null);
+							}
 							currentItems = item.Items;
 							found = true;
 							break;
