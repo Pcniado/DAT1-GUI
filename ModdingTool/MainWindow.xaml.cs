@@ -1490,6 +1490,13 @@ namespace ModdingTool {
             return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "MSM2" || _gameId == "RCRA";
         }
 
+        // Texture viewer now supports MSMR/MM (legacy header layout) in addition to i29+/MSM2/RCRA
+        private bool IsTextureViewerSupported()
+        {
+            if (string.IsNullOrEmpty(_gameId)) return false;
+            return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "MSM2" || _gameId == "RCRA" || _gameId == "MSMR" || _gameId == "MM";
+        }
+
         		private bool IsGameVersionI30()
 		{
 			return _gameId == "i30" || _gameId == "MSM2";
@@ -1659,11 +1666,11 @@ namespace ModdingTool {
 					AssetsListContextMenu.ExportWemToWav.Visibility = Visibility.Collapsed;
 					bool isTexture = assetName.EndsWith(".texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(".hd.texture", StringComparison.OrdinalIgnoreCase) || assetName.EndsWith(" (HD)");
 					if (isTexture) {
-						bool isI29OrHigher = IsGameVersionI29OrHigher();
+						bool textureSupported = IsTextureViewerSupported();
 						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
 						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
-						AssetsListContextMenu.ViewTexture.IsEnabled = isI29OrHigher;
-						AssetsListContextMenu.ExportTexture.IsEnabled = isI29OrHigher;
+						AssetsListContextMenu.ViewTexture.IsEnabled = textureSupported;
+						AssetsListContextMenu.ExportTexture.IsEnabled = textureSupported;
 					} else {
 						AssetsListContextMenu.ViewTexture.Visibility = Visibility.Collapsed;
 						AssetsListContextMenu.ExportTexture.Visibility = Visibility.Collapsed;
@@ -2493,7 +2500,7 @@ namespace ModdingTool {
             
             bool isI29OrHigher = IsGameVersionI29OrHigher();
             Tools_ConfigEditor.IsEnabled = isI29OrHigher;
-            Tools_TextureViewer.IsEnabled = isI29OrHigher;
+            Tools_TextureViewer.IsEnabled = IsTextureViewerSupported();
             Tools_WemPlayer.IsEnabled = true; 
         }
 

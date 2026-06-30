@@ -197,11 +197,11 @@ public partial class SearchWindow: MetroWindow {
 			bool isTexture = result.Path?.EndsWith(".texture", System.StringComparison.OrdinalIgnoreCase) ?? false;
 			if (isTexture)
 			{
-				bool isI29OrHigher = IsGameVersionI29OrHigher();
+				bool textureSupported = IsTextureViewerSupported();
 				AssetsListContextMenu.ViewTexture.Visibility = Visibility.Visible;
 				AssetsListContextMenu.ExportTexture.Visibility = Visibility.Visible;
-				AssetsListContextMenu.ViewTexture.IsEnabled = isI29OrHigher;
-				AssetsListContextMenu.ExportTexture.IsEnabled = isI29OrHigher;
+				AssetsListContextMenu.ViewTexture.IsEnabled = textureSupported;
+				AssetsListContextMenu.ExportTexture.IsEnabled = textureSupported;
 			}
 			else
 			{
@@ -223,6 +223,13 @@ public partial class SearchWindow: MetroWindow {
 	{// we do not include i31 because its closer to i20 than i30
 		if (string.IsNullOrEmpty(_gameId)) return false;
 		return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "MSM2" || _gameId == "RCRA";
+	}
+
+	// texture viewer supports legacy games too now
+	private bool IsTextureViewerSupported()
+	{
+		if (string.IsNullOrEmpty(_gameId)) return false;
+		return _gameId == "i29" || _gameId == "i30" || _gameId == "i33" || _gameId == "MSM2" || _gameId == "RCRA" || _gameId == "MSMR" || _gameId == "MM";
 	}
 
 	private bool IsGameVersionI30()

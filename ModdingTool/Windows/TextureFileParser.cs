@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using ModdingTool.Windows;
 
@@ -14,10 +13,9 @@ namespace ModdingTool.Windows
         public class TexelDataBlock
         {
             public int SpanIndex; // 0 = SD, 1 = HD
-            public byte[] Data; // Raw texel data (may be compressed or custom format)
+            public byte[] Data;
         }
 
-        // Struct to hold extracted texture info
         public class TextureInfo
         {
             public uint Size;
@@ -35,7 +33,7 @@ namespace ModdingTool.Windows
             public bool HasHD;
         }
 
-        // Extracts all Texel Data blocks (SD/HD) from a .texture file
+        // extracts all texel data blocks (sd/hd) from a .texture file
         public static List<TexelDataBlock> ExtractTexelDataBlocks(string filePath)
         {
             var blocks = new List<TexelDataBlock>();
@@ -46,8 +44,7 @@ namespace ModdingTool.Windows
                 while (fs.Position < fs.Length)
                 {
                     long blockStart = fs.Position;
-                    if (fs.Length - fs.Position < 8)
-                        break;
+                    if (fs.Length - fs.Position < 8) break;
                     int nameLen = br.ReadInt32();
                     if (nameLen < 0 || nameLen > 64) break;
                     string name = new string(br.ReadChars(nameLen));
@@ -55,7 +52,6 @@ namespace ModdingTool.Windows
                     if (blockSize < 0 || blockSize > fs.Length - fs.Position) break;
                     if (name == "Texel Data")
                     {
-                        // Read span index (4 bytes, usually 0=SD, 1=HD)
                         int spanIndex = br.ReadInt32();
                         byte[] data = br.ReadBytes(blockSize - 4);
                         blocks.Add(new TexelDataBlock { SpanIndex = spanIndex, Data = data });
@@ -69,448 +65,301 @@ namespace ModdingTool.Windows
             return blocks;
         }
 
-        // Returns the best DDS (HD preferred, fallback to SD) as a byte array, or null if not possible
+        // returns the best dds (hd preferred, fallback to sd) as a byte array, or null
         public static byte[] GetBestDDS(string filePath, out int spanIndex)
         {
             spanIndex = -1;
-            if (!File.Exists(filePath))
-                return null;
+            if (!File.Exists(filePath)) return null;
             try
             {
-                string hdPath = System.IO.Path.ChangeExtension(filePath, ".hd.texture");
-                if (File.Exists(hdPath))
-                {
-                    // Parse header from SD
-                    var asset = new AssetManager(File.ReadAllBytes(filePath));
-                    int offset = asset.GetAssetSectionOffset(Section.Texture.Content);
-                    int size = asset.GetAssetSectionSize(Section.Texture.Content);
-                    if (offset < 0 || size <= 0)
-                        return null;
-                    using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-                    using (var br = new BinaryReader(fs))
-                    {
-                        fs.Seek(offset, SeekOrigin.Begin);
-                        uint imgSize = br.ReadUInt32();
-                        uint hdSize = br.ReadUInt32();
-                        ushort width = br.ReadUInt16();
-                        ushort height = br.ReadUInt16();
-                        ushort sdWidth = br.ReadUInt16();
-                        ushort sdHeight = br.ReadUInt16();
-                        ushort images = br.ReadUInt16();
-                        byte channels = br.ReadByte();
-                        br.ReadBytes(5); // skip 5 bytes (unknown)
-                        byte format = br.ReadByte(); // format byte
-                        br.ReadByte(); // skip unknown byte
-                        br.ReadByte(); // skip mipmaps
-                        br.ReadByte(); // skip HDMipmaps
-                        br.ReadBytes(4); // skip 4 bytes (unknown)
-                        // Read all bytes from HD file as image data
-                        byte[] imageData = File.ReadAllBytes(hdPath);
-#if DEBUG
-                        File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[HD] Using SD header: width={width}, height={height}, format={format}, hdDataLen={imageData.Length}\n");
-#endif
-                        var dds = InsomniacTextureDecoder.DecodeToDDS(imageData, width, height, format);
-                        if (dds != null)
-                        {
-                                spanIndex = 1;
-                                    return dds;
-                        }
-                    }
-                }
-                // Fallback to SD
-                var assetSD = new AssetManager(File.ReadAllBytes(filePath));
-                int offsetSD = assetSD.GetAssetSectionOffset(Section.Texture.Content);
-                int sizeSD = assetSD.GetAssetSectionSize(Section.Texture.Content);
-                if (offsetSD < 0 || sizeSD <= 0)
-                    return null;
+                string hdPath = Path.ChangeExtension(filePath, ".hd.texture");
+                byte[] fileBytes = File.ReadAllBytes(filePath);
+                var asset = new AssetManager(fileBytes);
+                int offset = asset.GetAssetSectionOffset(Section.Texture.Content);
+                int sectionSize = asset.GetAssetSectionSize(Section.Texture.Content);
+                if (offset < 0 || sectionSize <= 0) return null;
+                bool isLegacy = asset._assetGame != AssetManager.Game.MSM2;
+
                 using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 using (var br = new BinaryReader(fs))
                 {
-                    fs.Seek(offsetSD, SeekOrigin.Begin);
-                    long pos;
-                    pos = fs.Position; uint imgSize = br.ReadUInt32();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] imgSize @ 0x{pos:X}: {imgSize}\n");
-#endif
-                    pos = fs.Position; uint hdSize = br.ReadUInt32();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] hdSize @ 0x{pos:X}: {hdSize}\n");
-#endif
-                    pos = fs.Position; ushort width = br.ReadUInt16();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] width @ 0x{pos:X}: {width}\n");
-#endif
-                    pos = fs.Position; ushort height = br.ReadUInt16();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] height @ 0x{pos:X}: {height}\n");
-#endif
-                    pos = fs.Position; ushort sdWidth = br.ReadUInt16();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] sdWidth @ 0x{pos:X}: {sdWidth}\n");
-#endif
-                    pos = fs.Position; ushort sdHeight = br.ReadUInt16();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] sdHeight @ 0x{pos:X}: {sdHeight}\n");
-#endif
-                    pos = fs.Position; ushort images = br.ReadUInt16();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] images @ 0x{pos:X}: {images}\n");
-#endif
-                    pos = fs.Position; byte channels = br.ReadByte();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] channels @ 0x{pos:X}: {channels}\n");
-#endif
-                    pos = fs.Position; byte[] skip5 = br.ReadBytes(5);
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip5 @ 0x{pos:X}: {BitConverter.ToString(skip5)}\n");
-#endif
-                    pos = fs.Position; byte formatByte = br.ReadByte();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] format (byte) @ 0x{pos:X}: {formatByte}\n");
-#endif
-                    // Try alternate layout if formatByte is 0 or invalid
-                    byte format = formatByte;
-                    if (formatByte == 0 || formatByte == 0xFF)
-                    {
-                        pos = fs.Position; byte skip1 = br.ReadByte();
-#if DEBUG
-                        File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip1 (alt) @ 0x{pos:X}: {skip1}\n");
-#endif
-                        pos = fs.Position; ushort formatAlt = br.ReadUInt16();
-#if DEBUG
-                        File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] format (alt ushort) @ 0x{pos:X}: {formatAlt}\n");
-#endif
-                        format = (byte)formatAlt; // fallback for now
-                    }
-                    pos = fs.Position; byte unk = br.ReadByte();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip unknown byte @ 0x{pos:X}: {unk}\n");
-#endif
-                    pos = fs.Position; byte mipmaps = br.ReadByte();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] mipmaps @ 0x{pos:X}: {mipmaps}\n");
-#endif
-                    pos = fs.Position; byte hdmipmaps = br.ReadByte();
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] hdmipmaps @ 0x{pos:X}: {hdmipmaps}\n");
-#endif
-                    pos = fs.Position; byte[] skip4 = br.ReadBytes(4);
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] skip4 @ 0x{pos:X}: {BitConverter.ToString(skip4)}\n");
-#endif
-                    // Read all bytes from HD file as image data
-                    byte[] imageData = File.Exists(hdPath) ? File.ReadAllBytes(hdPath) : br.ReadBytes((int)(imgSize / images));
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[SD] width={width}, height={height}, format={format}, dataLen={imageData.Length}\n");
-#endif
-                    var dds = InsomniacTextureDecoder.DecodeToDDS(imageData, width, height, format);
-                            if (dds != null)
-                            {
-                        spanIndex = File.Exists(hdPath) ? 1 : 0;
-                                return dds;
-                    }
-                }
-                return null;
-            }
-            catch (Exception ex)
-            {
-#if DEBUG
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[ERROR] {filePath}: {ex}\n");
-#endif
-                return null;
-            }
-        }
+                    fs.Seek(offset, SeekOrigin.Begin);
 
-        // Helper to load DDS from a .texture file (SD or HD), with debug logging for format
-        private static byte[] LoadDDSFromTextureFile(string filePath, out int spanIndex, string label)
-        {
-            spanIndex = -1;
-            var asset = new AssetManager(File.ReadAllBytes(filePath));
-            int offset = asset.GetAssetSectionOffset(Section.Texture.Content);
-            int size = asset.GetAssetSectionSize(Section.Texture.Content);
-            if (offset < 0 || size <= 0)
-                return null;
-            using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
-            using (var br = new BinaryReader(fs))
-            {
-                fs.Seek(offset, SeekOrigin.Begin);
-                long headerStart = fs.Position;
-                uint imgSize = br.ReadUInt32();
-                uint hdSize = br.ReadUInt32();
-                ushort width = br.ReadUInt16();
-                ushort height = br.ReadUInt16();
-                ushort sdWidth = br.ReadUInt16();
-                ushort sdHeight = br.ReadUInt16();
-                ushort images = br.ReadUInt16();
-                byte channels = br.ReadByte();
-                br.ReadBytes(5); // skip 5 bytes (unknown)
-                long formatOffset = fs.Position;
-                byte format = br.ReadByte(); // format byte
-                br.ReadByte(); // skip unknown byte
-                br.ReadByte(); // skip mipmaps
-                br.ReadByte(); // skip HDMipmaps
-                br.ReadBytes(4); // skip 4 bytes (unknown)
-                // After parsing the header, read image data from current position
-                long imageDataOffset = fs.Position;
-#if DEBUG
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[{label}] Header start: 0x{headerStart:X}, Format offset: 0x{formatOffset:X}, Format: {format}, Image data offset: 0x{imageDataOffset:X}\n");
-#endif
-                int imageBlockSize = (int)(imgSize / images);
-                byte[] imageData = br.ReadBytes(imageBlockSize); // Only the first image's data
-                // Debug: dump first 32 bytes as hex
-                StringBuilder hex = new StringBuilder();
-                for (int i = 0; i < Math.Min(32, imageData.Length); i++)
-                    hex.Append($"{imageData[i]:X2} ");
-#if DEBUG
-                File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[{label}] First 32 bytes: {hex}\n");
-#endif
-                var dds = InsomniacTextureDecoder.DecodeToDDS(imageData, width, height, format);
-                if (dds != null)
-                {
-#if DEBUG
-                    File.AppendAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log"), $"[{label}] DDS constructed: width={width}, height={height}, format={format}, mipmapDataLength={imageData.Length}, ddsLength={dds.Length}\n");
-#endif
-                    spanIndex = (label == "HD") ? 1 : 0;
-                    return dds;
-                }
-                return null;
-            }
-        }
-
-        // Helper to extract a Texel Data block with a given span index from a section byte array
-        private static byte[] ExtractTexelDataBlockFromSection(byte[] sectionData, int wantedSpan)
-        {
-            bool foundAnyBlock = false;
-            StringBuilder debugBlocks = new StringBuilder();
-#if DEBUG
-            string debugLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log");
-#endif
-            using (var ms = new MemoryStream(sectionData))
-            using (var br = new BinaryReader(ms))
-            {
-                ms.Seek(0, SeekOrigin.Begin);
-                while (ms.Position < ms.Length)
-                {
-                    long blockStart = ms.Position;
-                    if (ms.Length - ms.Position < 8)
-                    break;
-                    int nameLen = br.ReadInt32();
-                    if (nameLen < 0 || nameLen > 64) break;
-                    string name = new string(br.ReadChars(nameLen));
-                    int blockSize = br.ReadInt32();
-                    if (blockSize < 0 || blockSize > ms.Length - ms.Position) break;
-                    debugBlocks.AppendLine($"Block: '{name}', Size: {blockSize}, Pos: 0x{blockStart:X}");
-                    if (name == "Texel Data")
+                    if (isLegacy)
                     {
-                        int spanIndex = br.ReadInt32();
-                        byte[] data = br.ReadBytes(blockSize - 4);
-                        if (spanIndex == wantedSpan)
+                        // layout confirmed against silktexture's Source.cs legacy branch
+                        uint sdLen      = br.ReadUInt32();
+                        uint hdLen      = br.ReadUInt32();
+                        ushort hdWidth  = br.ReadUInt16();
+                        ushort hdHeight = br.ReadUInt16();
+                        ushort sdWidth  = br.ReadUInt16();
+                        ushort sdHeight = br.ReadUInt16();
+                        ushort arrSize  = br.ReadUInt16();
+                        br.ReadByte();                // channels (skip)
+                        br.ReadByte();                // skip
+                        ushort fmt      = br.ReadUInt16();
+                        br.ReadBytes(8);              // skip
+                        br.ReadByte();                // sd mipmaps
+                        br.ReadByte();                // skip
+                        br.ReadByte();                // hd mipmaps
+                        br.ReadBytes(11);             // skip
+                        // mip data follows sequentially in the section
+                        bool hasHd = hdLen > 0 && File.Exists(hdPath);
+                        if (hasHd)
                         {
-                            // Log the offset and size of the extracted texel data block
-#if DEBUG
-                            File.AppendAllText(debugLogPath, $"Extracted Texel Data block: Span={spanIndex}, Offset=0x{blockStart:X}, Size={data.Length}\n");
-#endif
-                            return data;
+                            byte[] hdData = File.ReadAllBytes(hdPath);
+                            var dds = InsomniacTextureDecoder.DecodeToDDS(hdData, hdWidth, hdHeight, fmt);
+                            if (dds != null) { spanIndex = 1; return dds; }
                         }
-                        foundAnyBlock = true;
+                        byte[] sdData = br.ReadBytes((int)(sdLen / Math.Max(1, (int)arrSize)));
+                        var sdDds = InsomniacTextureDecoder.DecodeToDDS(sdData, sdWidth, sdHeight, fmt);
+                        if (sdDds != null) { spanIndex = 0; return sdDds; }
+                        return null;
                     }
                     else
                     {
-                        ms.Seek(blockSize, SeekOrigin.Current);
+                        // msm2 layout
+                        uint imgSize    = br.ReadUInt32();
+                        uint hdSize     = br.ReadUInt32();
+                        ushort width    = br.ReadUInt16();
+                        ushort height   = br.ReadUInt16();
+                        ushort sdWidth  = br.ReadUInt16();
+                        ushort sdHeight = br.ReadUInt16();
+                        ushort images   = br.ReadUInt16();
+                        br.ReadByte();               // channels
+                        br.ReadBytes(5);
+                        byte format     = br.ReadByte();
+                        br.ReadByte();
+                        br.ReadByte();
+                        br.ReadByte();
+                        br.ReadBytes(4);
+
+                        bool hasHd = hdSize > 0 && File.Exists(hdPath);
+                        if (hasHd)
+                        {
+                            byte[] hdData = File.ReadAllBytes(hdPath);
+                            var dds = InsomniacTextureDecoder.DecodeToDDS(hdData, width, height, format);
+                            if (dds != null) { spanIndex = 1; return dds; }
+                        }
+                        byte[] sdData = br.ReadBytes((int)(imgSize / Math.Max(1, (int)images)));
+                        var sdDds = InsomniacTextureDecoder.DecodeToDDS(sdData, sdWidth, sdHeight, format);
+                        if (sdDds != null) { spanIndex = 0; return sdDds; }
+                        return null;
                     }
                 }
             }
-            if (!foundAnyBlock)
-            {
-                // No debug popups or hex dumps; just return null silently
-            }
-            return null;
+            catch { return null; }
         }
 
-        private static bool IsDDS(byte[] data)
-        {
-            return data.Length > 4 && data[0] == 0x44 && data[1] == 0x44 && data[2] == 0x53 && data[3] == 0x20; // 'DDS '
-        }
-
-        // Extracts all header info from a .texture or .hd.texture file (using .texture for header)
+        // extracts header info from a .texture file
         public static TextureInfo ExtractTextureInfo(string filePath)
         {
-            if (!File.Exists(filePath))
-                return null;
-#if DEBUG
-            string debugLogPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "TextureViewer_debug.log");
-#endif
+            if (!File.Exists(filePath)) return null;
             try
             {
                 var asset = new AssetManager(File.ReadAllBytes(filePath));
                 int offset = asset.GetAssetSectionOffset(Section.Texture.Content);
-                int size = asset.GetAssetSectionSize(Section.Texture.Content);
-                if (offset < 0 || size <= 0)
-                    return null;
+                int size   = asset.GetAssetSectionSize(Section.Texture.Content);
+                if (offset < 0 || size <= 0) return null;
+
                 using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
                 using (var br = new BinaryReader(fs))
                 {
-#if DEBUG
-                    using (var debugWriter = new StreamWriter(debugLogPath, true))
-                    {
-                        debugWriter.WriteLine($"\n--- ExtractTextureInfo: {filePath} ---");
-                        debugWriter.WriteLine($"Section offset: {offset}, size: {size}");
-                        fs.Seek(offset, SeekOrigin.Begin);
-                        var info = new TextureInfo();
-                        long pos;
-                        pos = fs.Position; info.Size = br.ReadUInt32(); debugWriter.WriteLine($"[{pos:X}] Size: {info.Size}");
-                        pos = fs.Position; info.HDSize = br.ReadUInt32(); debugWriter.WriteLine($"[{pos:X}] HDSize: {info.HDSize}");
-                        pos = fs.Position; info.Width = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Width: {info.Width}");
-                        pos = fs.Position; info.Height = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Height: {info.Height}");
-                        pos = fs.Position; info.SDWidth = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] SDWidth: {info.SDWidth}");
-                        pos = fs.Position; info.SDHeight = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] SDHeight: {info.SDHeight}");
-                        pos = fs.Position; info.Images = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Images: {info.Images}");
-                        pos = fs.Position; info.Channels = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Channels: {info.Channels}");
-
-                        if (asset._assetGame == AssetManager.Game.MSM2)
-                        {
-                            pos = fs.Position; var skip5 = br.ReadBytes(5); debugWriter.WriteLine($"[{pos:X}] Skip 5 bytes: {BitConverter.ToString(skip5)}");
-                            pos = fs.Position; info.Format = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Format (byte): {info.Format}");
-                            pos = fs.Position; var unk = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip unknown byte: {unk}");
-                            pos = fs.Position; info.Mipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Mipmaps: {info.Mipmaps}");
-                            pos = fs.Position; info.HDMipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] HDMipmaps: {info.HDMipmaps}");
-                            pos = fs.Position; var skip4 = br.ReadBytes(4); debugWriter.WriteLine($"[{pos:X}] Skip 4 bytes: {BitConverter.ToString(skip4)}");
-                        }
-                        else
-                        {
-                            pos = fs.Position; var skip1 = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip 1 byte: {skip1}");
-                            pos = fs.Position; info.Format = br.ReadUInt16(); debugWriter.WriteLine($"[{pos:X}] Format (ushort): {info.Format}");
-                            pos = fs.Position; var skip8 = br.ReadBytes(8); debugWriter.WriteLine($"[{pos:X}] Skip 8 bytes: {BitConverter.ToString(skip8)}");
-                            pos = fs.Position; info.Mipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Mipmaps: {info.Mipmaps}");
-                            pos = fs.Position; var skip1b = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] Skip 1 byte: {skip1b}");
-                            pos = fs.Position; info.HDMipmaps = br.ReadByte(); debugWriter.WriteLine($"[{pos:X}] HDMipmaps: {info.HDMipmaps}");
-                            pos = fs.Position; var skip11 = br.ReadBytes(11); debugWriter.WriteLine($"[{pos:X}] Skip 11 bytes: {BitConverter.ToString(skip11)}");
-                        }
-
-                        info.SourceFile = filePath;
-                        info.HasHD = File.Exists(System.IO.Path.ChangeExtension(filePath, ".hd.texture"));
-                        debugWriter.Flush();
-                        return info;
-                    }
-#else
                     fs.Seek(offset, SeekOrigin.Begin);
-                    var info = new TextureInfo();
-                    long pos;
-                    pos = fs.Position; info.Size = br.ReadUInt32();
-                    pos = fs.Position; info.HDSize = br.ReadUInt32();
-                    pos = fs.Position; info.Width = br.ReadUInt16();
-                    pos = fs.Position; info.Height = br.ReadUInt16();
-                    pos = fs.Position; info.SDWidth = br.ReadUInt16();
-                    pos = fs.Position; info.SDHeight = br.ReadUInt16();
-                    pos = fs.Position; info.Images = br.ReadUInt16();
-                    pos = fs.Position; info.Channels = br.ReadByte();
+                    var info    = new TextureInfo();
+                    info.Size   = br.ReadUInt32();
+                    info.HDSize = br.ReadUInt32();
+                    info.Width  = br.ReadUInt16();
+                    info.Height = br.ReadUInt16();
+                    info.SDWidth  = br.ReadUInt16();
+                    info.SDHeight = br.ReadUInt16();
+                    info.Images   = br.ReadUInt16();
+                    info.Channels = br.ReadByte();
 
                     if (asset._assetGame == AssetManager.Game.MSM2)
                     {
-                        pos = fs.Position; br.ReadBytes(5);
-                        pos = fs.Position; info.Format = br.ReadByte();
-                        pos = fs.Position; br.ReadByte();
-                        pos = fs.Position; info.Mipmaps = br.ReadByte();
-                        pos = fs.Position; info.HDMipmaps = br.ReadByte();
-                        pos = fs.Position; br.ReadBytes(4);
+                        br.ReadBytes(5);
+                        info.Format    = br.ReadByte();
+                        br.ReadByte();
+                        info.Mipmaps   = br.ReadByte();
+                        info.HDMipmaps = br.ReadByte();
+                        br.ReadBytes(4);
                     }
                     else
                     {
-                        pos = fs.Position; br.ReadByte();
-                        pos = fs.Position; info.Format = br.ReadUInt16();
-                        pos = fs.Position; br.ReadBytes(8);
-                        pos = fs.Position; info.Mipmaps = br.ReadByte();
-                        pos = fs.Position; br.ReadByte();
-                        pos = fs.Position; info.HDMipmaps = br.ReadByte();
-                        pos = fs.Position; br.ReadBytes(11);
+                        // layout confirmed against silktexture's Source.cs legacy branch
+                        br.ReadByte();
+                        info.Format    = br.ReadUInt16();
+                        br.ReadBytes(8);
+                        info.Mipmaps   = br.ReadByte();
+                        br.ReadByte();
+                        info.HDMipmaps = br.ReadByte();
+                        br.ReadBytes(11);
                     }
 
                     info.SourceFile = filePath;
-                    info.HasHD = File.Exists(System.IO.Path.ChangeExtension(filePath, ".hd.texture"));
+                    info.HasHD = File.Exists(Path.ChangeExtension(filePath, ".hd.texture"));
                     return info;
-#endif
                 }
             }
-            catch (Exception ex)
-            {
-#if DEBUG
-                File.AppendAllText(debugLogPath, $"[ERROR] {filePath}: {ex}\n");
-#endif
-                return null;
-            }
+            catch { return null; }
         }
 
-        // Returns a human-readable DXGI format name for a given format code
+        // maps a dxgi format code to its name, same table as silktexture's dxgi.cs
         public static string GetDXGIFormatName(int format)
         {
             switch (format)
             {
-                case 98: return "BC7_UNORM (98)";
-                case 97: return "BC7_TYPELESS (97)";
-                case 99: return "BC7_UNORM_SRGB (99)";
-                case 71: return "BC1_UNORM (71)";
-                case 70: return "BC1_TYPELESS (70)";
-                case 72: return "BC1_UNORM_SRGB (72)";
-                case 74: return "BC2_UNORM (74)";
-                case 73: return "BC2_TYPELESS (73)";
-                case 75: return "BC2_UNORM_SRGB (75)";
-                case 77: return "BC3_UNORM (77)";
-                case 76: return "BC3_TYPELESS (76)";
-                case 78: return "BC3_UNORM_SRGB (78)";
-                case 83: return "BC5_UNORM (83)";
-                case 82: return "BC5_TYPELESS (82)";
-                case 84: return "BC5_SNORM (84)";
-                case 87: return "B8G8R8A8_UNORM (87)";
-                case 28: return "R8G8B8A8_UNORM (28)";
-                case 61: return "R8_UNORM (61)";
-                case 56: return "R16_UNORM (56)";
-                case 115: return "B4G4R4A4_UNORM (115)";
-                case 24: return "R10G10B10A2_UNORM (24)";
-                case 2: return "R32G32B32A32_FLOAT (2)";
-                case 10: return "R16G16B16A16_FLOAT (10)";
-                case 41: return "R32_FLOAT (41)";
-                case 40: return "D32_FLOAT (40)";
-                case 55: return "D16_UNORM (55)";
-                case 65: return "A8_UNORM (65)";
-                default: return $"Unknown ({format})";
+                case 0:   return "UNKNOWN";
+                case 1:   return "R32G32B32A32_TYPELESS";
+                case 2:   return "R32G32B32A32_FLOAT";
+                case 3:   return "R32G32B32A32_UINT";
+                case 4:   return "R32G32B32A32_SINT";
+                case 5:   return "R32G32B32_TYPELESS";
+                case 6:   return "R32G32B32_FLOAT";
+                case 7:   return "R32G32B32_UINT";
+                case 8:   return "R32G32B32_SINT";
+                case 9:   return "R16G16B16A16_TYPELESS";
+                case 10:  return "R16G16B16A16_FLOAT";
+                case 11:  return "R16G16B16A16_UNORM";
+                case 12:  return "R16G16B16A16_UINT";
+                case 13:  return "R16G16B16A16_SNORM";
+                case 14:  return "R16G16B16A16_SINT";
+                case 15:  return "R32G32_TYPELESS";
+                case 16:  return "R32G32_FLOAT";
+                case 17:  return "R32G32_UINT";
+                case 18:  return "R32G32_SINT";
+                case 19:  return "R32G8X24_TYPELESS";
+                case 20:  return "D32_FLOAT_S8X24_UINT";
+                case 21:  return "R32_FLOAT_X8X24_TYPELESS";
+                case 22:  return "X32_TYPELESS_G8X24_UINT";
+                case 23:  return "R10G10B10A2_TYPELESS";
+                case 24:  return "R10G10B10A2_UNORM";
+                case 25:  return "R10G10B10A2_UINT";
+                case 26:  return "R11G11B10_FLOAT";
+                case 27:  return "R8G8B8A8_TYPELESS";
+                case 28:  return "R8G8B8A8_UNORM";
+                case 29:  return "R8G8B8A8_UNORM_SRGB";
+                case 30:  return "R8G8B8A8_UINT";
+                case 31:  return "R8G8B8A8_SNORM";
+                case 32:  return "R8G8B8A8_SINT";
+                case 33:  return "R16G16_TYPELESS";
+                case 34:  return "R16G16_FLOAT";
+                case 35:  return "R16G16_UNORM";
+                case 36:  return "R16G16_UINT";
+                case 37:  return "R16G16_SNORM";
+                case 38:  return "R16G16_SINT";
+                case 39:  return "R32_TYPELESS";
+                case 40:  return "D32_FLOAT";
+                case 41:  return "R32_FLOAT";
+                case 42:  return "R32_UINT";
+                case 43:  return "R32_SINT";
+                case 44:  return "R24G8_TYPELESS";
+                case 45:  return "D24_UNORM_S8_UINT";
+                case 46:  return "R24_UNORM_X8_TYPELESS";
+                case 47:  return "X24_TYPELESS_G8_UINT";
+                case 48:  return "R8G8_TYPELESS";
+                case 49:  return "R8G8_UNORM";
+                case 50:  return "R8G8_UINT";
+                case 51:  return "R8G8_SNORM";
+                case 52:  return "R8G8_SINT";
+                case 53:  return "R16_TYPELESS";
+                case 54:  return "R16_FLOAT";
+                case 55:  return "D16_UNORM";
+                case 56:  return "R16_UNORM";
+                case 57:  return "R16_UINT";
+                case 58:  return "R16_SNORM";
+                case 59:  return "R16_SINT";
+                case 60:  return "R8_TYPELESS";
+                case 61:  return "R8_UNORM";
+                case 62:  return "R8_UINT";
+                case 63:  return "R8_SNORM";
+                case 64:  return "R8_SINT";
+                case 65:  return "A8_UNORM";
+                case 66:  return "R1_UNORM";
+                case 67:  return "R9G9B9E5_SHAREDEXP";
+                case 68:  return "R8G8_B8G8_UNORM";
+                case 69:  return "G8R8_G8B8_UNORM";
+                case 70:  return "BC1_TYPELESS";
+                case 71:  return "BC1_UNORM";
+                case 72:  return "BC1_UNORM_SRGB";
+                case 73:  return "BC2_TYPELESS";
+                case 74:  return "BC2_UNORM";
+                case 75:  return "BC2_UNORM_SRGB";
+                case 76:  return "BC3_TYPELESS";
+                case 77:  return "BC3_UNORM";
+                case 78:  return "BC3_UNORM_SRGB";
+                case 79:  return "BC4_TYPELESS";
+                case 80:  return "BC4_UNORM";
+                case 81:  return "BC4_SNORM";
+                case 82:  return "BC5_TYPELESS";
+                case 83:  return "BC5_UNORM";
+                case 84:  return "BC5_SNORM";
+                case 85:  return "B5G6R5_UNORM";
+                case 86:  return "B5G5R5A1_UNORM";
+                case 87:  return "B8G8R8A8_UNORM";
+                case 88:  return "B8G8R8X8_UNORM";
+                case 89:  return "R10G10B10_XR_BIAS_A2_UNORM";
+                case 90:  return "B8G8R8A8_TYPELESS";
+                case 91:  return "B8G8R8A8_UNORM_SRGB";
+                case 92:  return "B8G8R8X8_TYPELESS";
+                case 93:  return "B8G8R8X8_UNORM_SRGB";
+                case 94:  return "BC6H_TYPELESS";
+                case 95:  return "BC6H_UF16";
+                case 96:  return "BC6H_SF16";
+                case 97:  return "BC7_TYPELESS";
+                case 98:  return "BC7_UNORM";
+                case 99:  return "BC7_UNORM_SRGB";
+                case 100: return "AYUV";
+                case 101: return "Y410";
+                case 102: return "Y416";
+                case 103: return "NV12";
+                case 104: return "P010";
+                case 105: return "P016";
+                case 106: return "420_OPAQUE";
+                case 107: return "YUY2";
+                case 108: return "Y210";
+                case 109: return "Y216";
+                case 110: return "NV11";
+                case 111: return "AI44";
+                case 112: return "IA44";
+                case 113: return "P8";
+                case 114: return "A8P8";
+                case 115: return "B4G4R4A4_UNORM";
+                case 130: return "P208";
+                case 131: return "V208";
+                case 132: return "V408";
+                default:  return $"Unknown ({format})";
             }
         }
 
-        // Extracts image data, width, height, and format from a .texture file exactly like SilkTexture
+        // extracts image data, width, height, and format from a .texture file (msm2 layout only)
         public static (byte[] imageData, int width, int height, int format) ExtractSilkCompatibleImageData(string filePath)
         {
             var asset = new AssetManager(File.ReadAllBytes(filePath));
             int offset = asset.GetAssetSectionOffset(Section.Texture.Content);
-            int size = asset.GetAssetSectionSize(Section.Texture.Content);
-            if (offset < 0 || size <= 0)
-                throw new InvalidOperationException("Invalid section offset/size");
+            int size   = asset.GetAssetSectionSize(Section.Texture.Content);
+            if (offset < 0 || size <= 0) throw new InvalidOperationException("Invalid section offset/size");
             using (var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read))
             using (var br = new BinaryReader(fs))
             {
                 fs.Seek(offset, SeekOrigin.Begin);
-                byte[] sectionData = br.ReadBytes(size);
-                using (var ms = new MemoryStream(sectionData))
-                using (var br2 = new BinaryReader(ms))
-                {
-                    uint imgSize = br2.ReadUInt32();
-                    uint hdSize = br2.ReadUInt32();
-                    ushort width = br2.ReadUInt16();
-                    ushort height = br2.ReadUInt16();
-                    ushort sdWidth = br2.ReadUInt16();
-                    ushort sdHeight = br2.ReadUInt16();
-                    ushort images = br2.ReadUInt16();
-                    byte channels = br2.ReadByte();
-                    br2.ReadBytes(5); // skip 5 bytes (unknown)
-                    byte format = br2.ReadByte(); // format byte
-                    br2.ReadByte(); // skip unknown byte
-                    br2.ReadByte(); // skip mipmaps
-                    br2.ReadByte(); // skip HDMipmaps
-                    br2.ReadBytes(4); // skip 4 bytes (unknown)
-                    int imageBlockSize = (int)(imgSize / images);
-                    byte[] imageData = br2.ReadBytes(imageBlockSize); // Only the first image's data
-                    return (imageData, width, height, format);
-                }
+                uint imgSize  = br.ReadUInt32();
+                uint hdSize   = br.ReadUInt32();
+                ushort width  = br.ReadUInt16();
+                ushort height = br.ReadUInt16();
+                ushort sdW    = br.ReadUInt16();
+                ushort sdH    = br.ReadUInt16();
+                ushort images = br.ReadUInt16();
+                br.ReadByte();
+                br.ReadBytes(5);
+                byte format   = br.ReadByte();
+                br.ReadByte(); br.ReadByte(); br.ReadByte();
+                br.ReadBytes(4);
+                int blockSize = (int)(imgSize / Math.Max(1, (int)images));
+                byte[] data   = br.ReadBytes(blockSize);
+                return (data, width, height, format);
             }
         }
     }
-} 
+}

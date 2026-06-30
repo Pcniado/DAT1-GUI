@@ -267,29 +267,64 @@ namespace ModdingTool.Windows
                     try
                     {
                         using var ms = new MemoryStream(ddsData);
-                        image = Pfim.Pfimage.FromStream(ms);
-                        // If info extraction failed, fallback to Pfim info
-                        if (width == 0 || height == 0)
+                        // check if pfim can handle this format; if not, convert ourselves
+                        uint dxgiFmt = ddsData.Length >= 0x80 ? BitConverter.ToUInt32(ddsData, 0x80) : 0;
+                        byte[] softDecoded = null;
+                        if (!InsomniacTextureDecoder.IsPfimSupported(dxgiFmt) && width > 0 && height > 0)
                         {
-                            width = image.Width;
-                            height = image.Height;
-                        }
-                        if (mipmaps == 1 && image.MipMaps != null)
-                            mipmaps = image.MipMaps.Length;
-                        if (formatString == "-" || formatString.Contains("Unknown"))
-                            formatString = image.Format.ToString();
-                    }
-                    catch (Exception ex)
-                    {
-                        if (!triedDDSExport)
-                        {
-                            triedDDSExport = true;
-                            if (MessageBox.Show($"Failed to decode DDS: {ex.Message}\nWould you like to export the DDS for external viewing?", "Error", MessageBoxButton.YesNo, MessageBoxImage.Error) == MessageBoxResult.Yes)
+                            // extract raw mip bytes from the dds (after the 148-byte dx10 header)
+                            if (ddsData.Length > 148)
                             {
-                                InsomniacTextureDecoder.SaveDDSForExternalTool(ddsData);
+                                byte[] rawMip = new byte[ddsData.Length - 148];
+                                Buffer.BlockCopy(ddsData, 148, rawMip, 0, rawMip.Length);
+                                softDecoded = InsomniacTextureDecoder.ConvertToBgra32(rawMip, dxgiFmt, (uint)width, (uint)height);
                             }
                         }
-                        StatusText.Text = $"Failed to decode DDS: {ex.Message}";
+                        if (softDecoded != null)
+                        {
+                            // build bitmap directly from our converted buffer
+                            int stride = width * 4;
+                            var bmpSoft = System.Windows.Media.Imaging.BitmapSource.Create(
+                                width, height, 96, 96,
+                                System.Windows.Media.PixelFormats.Bgra32, null,
+                                softDecoded, stride);
+                            _originalBitmapSource = bmpSoft;
+                            UpdateChannelPreview();
+                            currentTexturePath = filePath;
+                            _originalImageWidth  = bmpSoft.PixelWidth;
+                            _originalImageHeight = bmpSoft.PixelHeight;
+                            Dispatcher.BeginInvoke(new Action(() => { _zoom = GetFitZoom(); SetZoom(_zoom); }), System.Windows.Threading.DispatcherPriority.Loaded);
+                            TextureImage.Width  = double.NaN;
+                            TextureImage.Height = double.NaN;
+                            StatusText.Text = $"Loaded: {System.IO.Path.GetFileName(filePath)}";
+                            DropHintText.Visibility = System.Windows.Visibility.Collapsed;
+                            InfoFormat.Text     = formatString;
+                            InfoDimensions.Text = $"{width} x {height}";
+                            InfoMipmaps.Text    = mipmaps.ToString();
+                            return;
+                        }
+                        image = Pfim.Pfimage.FromStream(ms);
+                        if (width == 0 || height == 0) { width = image.Width; height = image.Height; }
+                        if (mipmaps == 1 && image.MipMaps != null) mipmaps = image.MipMaps.Length;
+                        if (formatString == "-" || formatString.StartsWith("Unknown")) formatString = image.Format.ToString();
+                    }
+                    catch (Exception pfimEx)
+                    {
+                        // pfim can't decode it and we have no soft-converter for it either
+                        StatusText.Text = $"Preview unavailable ({formatString})";
+                        InfoFormat.Text     = formatString;
+                        InfoDimensions.Text = $"{width} x {height}";
+                        InfoMipmaps.Text    = mipmaps.ToString();
+                        DropHintText.Visibility = System.Windows.Visibility.Collapsed;
+                        _currentDdsData = ddsData;
+                        if (MessageBox.Show(
+                            $"This texture format ({formatString}) can't be rendered in the viewer.\nExport the raw DDS for use in an external tool?",
+                            "Preview Unavailable",
+                            MessageBoxButton.YesNo,
+                            MessageBoxImage.Information) == MessageBoxResult.Yes)
+                        {
+                            InsomniacTextureDecoder.SaveDDSForExternalTool(ddsData);
+                        }
                         return;
                     }
                 }
