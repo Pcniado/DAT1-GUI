@@ -97,7 +97,7 @@ public partial class SearchWindow: MetroWindow {
 		_callback((SearchResults.SelectedItem as SearchResult).RefPath);
 	}
 
-	private void Search() {
+private void Search() {
 		_displayedResults.Clear();
 
 		var search = Normalize(SearchTextBox.Text.Trim());
@@ -108,15 +108,26 @@ public partial class SearchWindow: MetroWindow {
 			// search in fullpath
 			var i = 0;
 			foreach (var asset in _assets) {
-				if ((selectedType == "All" || asset.AssetType == selectedType) && asset.FullPath != null && MatchesWords(Normalize(asset.FullPath), words)) {
-					_displayedResults.Add(new SearchResult {
-						AssetIndex = i,
-						Span = asset.Span,
-						Id = asset.Id,
-						Size = asset.Size,
-						Path = asset.FullPath,
-						Archive = asset.Archive
-					});
+				if (selectedType != "All" && asset.AssetType != selectedType) {
+					++i;
+					continue;
+				}
+
+				if (asset.FullPath != null) {
+					var hexId = asset.Id.ToString("X016").ToLowerInvariant();
+					// Include normalized path, 16-character hex ID, 0x hex ID, and ref path (e.g. 0/a5a7d5bf77c9fbe3)
+					var searchableText = $"{Normalize(asset.FullPath)} {hexId} 0x{hexId} {asset.Span}/{hexId}";
+
+					if (MatchesWords(searchableText, words)) {
+						_displayedResults.Add(new SearchResult {
+							AssetIndex = i,
+							Span = asset.Span,
+							Id = asset.Id,
+							Size = asset.Size,
+							Path = asset.FullPath,
+							Archive = asset.Archive
+						});
+					}
 				}
 				++i;
 			}
@@ -129,7 +140,10 @@ public partial class SearchWindow: MetroWindow {
 					if (selectedType != "All" && asset.AssetType != selectedType) continue;
 
 					var fakepath = System.IO.Path.Combine(path, asset.Name);
-					if (MatchesWords(Normalize(fakepath), words)) {
+					var hexId = asset.Id.ToString("X016").ToLowerInvariant();
+					var searchableText = $"{Normalize(fakepath)} {hexId} 0x{hexId} {asset.Span}/{hexId}";
+
+					if (MatchesWords(searchableText, words)) {
 						_displayedResults.Add(new SearchResult {
 							AssetIndex = assetIndex,
 							Span = asset.Span,
@@ -146,8 +160,8 @@ public partial class SearchWindow: MetroWindow {
 		ResultsCount.Text = $"{_displayedResults.Count} results";
 		SearchResults.ItemsSource = _displayedResults;
 	}
-
-	private static string Normalize(string text) {
+	
+    private static string Normalize(string text) {
 		return text.Replace('\\', '/').ToLower();
 	}
 
