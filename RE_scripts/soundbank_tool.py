@@ -66,26 +66,25 @@ class SoundBankBuilt:
     SIZE = 64
     def __init__(self, data):
         (
-            self.wwise_id,         
-            self.bank_size,        
-            self.bank_name_offset, 
-            self.flags,            
-            self.pad               
+            self.wwise_id,
+            self.bank_size,
+            self.bank_name_offset,
+            self.flags,
+            self.pad
         ) = struct.unpack('<I I H B 53s', data)
     def to_bytes(self):
         return struct.pack('<I I H B 53s', self.wwise_id, self.bank_size, self.bank_name_offset, self.flags, self.pad)
 
 class WwiseInfoElem:
     SIZE = 16
-
     def __init__(self, data):
         (
-            self.name_hash,      
-            self.name_offset,    
-            self.flags,          
+            self.name_hash,
+            self.name_offset,
+            self.flags,
             self.max_attenuation,
-            self.min_duration,   
-            self.max_duration    
+            self.min_duration,
+            self.max_duration
         ) = struct.unpack('<I H H f H H', data)
     def to_bytes(self):
         return struct.pack('<I H H f H H', self.name_hash, self.name_offset, self.flags, self.max_attenuation, self.min_duration, self.max_duration)
@@ -108,15 +107,25 @@ class SoundBank:
         with open(self.filename, 'rb') as f:
             data = f.read()
 
-            dat1_offset = data.find(b'DAT1')
-            if dat1_offset == -1:
-                dat1_offset = data.find(b'1TAD')
-            if dat1_offset == -1:
+            # Find the very first occurrence of either DAT1 or 1TAD
+            offset_dat1 = data.find(b'DAT1')
+            offset_1tad = data.find(b'1TAD')
+            
+            # Filter out the ones that weren't found (-1)
+            valid_offsets = [o for o in (offset_dat1, offset_1tad) if o != -1]
+            
+            if not valid_offsets:
                 raise ValueError(f"'DAT1' or '1TAD' marker not found in file ({self.filename})")
 
-            data = data[dat1_offset:]
+            # Start from whichever marker appears FIRST in the file
+            start_offset = min(valid_offsets)
+
+            # Slice the data to ignore any junk before the header
+            data = data[start_offset:]
+            
             if len(data) < 16:
                 raise ValueError(f"File too short or corrupt: cannot read header ({self.filename})")
+            
             self.header = DataFileHeader(*struct.unpack('<I I I H H', data[:16]))
 
             self.block_headers = []
@@ -136,7 +145,6 @@ class SoundBank:
         self._parse_blocks()
 
     def _parse_blocks(self):
-
         if K_SOUNDBANK_BUILT_HASH in self.blocks:
             self.bank_built = SoundBankBuilt(self.blocks[K_SOUNDBANK_BUILT_HASH][:SoundBankBuilt.SIZE])
         else:
@@ -172,16 +180,13 @@ class SoundBank:
                 self.eventid_to_fileid[lookup.event_id] = lookup.file_id
 
     def compute_wwise_id(self, name):
-
         return custom_crc32(name)
 
     def list_events(self):
-
         print(f"{'Idx':<4} {'Event Name':<40} {'Hash':<10} {'Flags':<6} {'MaxAttn':<8} {'MinDur':<6} {'MaxDur':<6} {'WEM File':<16}")
         print('-'*100)
         for idx, elem in enumerate(self.info_elems):
             name = self.get_string(elem.name_offset)
-
             wem_file = ''
             file_id = self.eventid_to_fileid.get(elem.name_hash)
             if file_id is not None:
@@ -189,7 +194,6 @@ class SoundBank:
             print(f"{idx:<4} {name:<40} {elem.name_hash:08x} {elem.flags:<6} {elem.max_attenuation:<8.1f} {elem.min_duration:<6} {elem.max_duration:<6} {wem_file:<16}")
 
     def get_string(self, offset):
-
         real_offset = (offset << 2)
         end = self.strings.find(b'\x00', real_offset)
         return self.strings[real_offset:end].decode('utf-8') if end != -1 else ''
@@ -202,11 +206,9 @@ K_SOUNDBANK_STREAM_LOOKUP_HASH = HASHES['kSoundBankStreamLookup']
 K_SOUNDBWISE_BNK_BUILT_HASH = HASHES['kSoundWwiseBnkBuilt']
 
 def main():
-    parser = argparse.ArgumentParser(description='Read/Edit .soundbank files')
+    parser = argparse.ArgumentParser(description='Read .soundbank files')
     parser.add_argument('file', nargs='?', help='.soundbank file to read')
     parser.add_argument('--list', action='store_true', help='List events')
-    parser.add_argument('--set-event-name', nargs=2, metavar=('INDEX', 'NAME'), help='Set event name (demo only)')
-    parser.add_argument('--save', metavar='OUTFILE', help='Save modified file (demo only)')
     parser.add_argument('--print-hashes', action='store_true', help='Print block name hashes')
     parser.add_argument('--wem-to-event', metavar='WEM_ID', type=int, help='Given a .wem file number, print all event names that map to it')
     parser.add_argument('--list-wems', action='store_true', help='List all .wem file numbers and the event names that use them')
@@ -279,14 +281,9 @@ def main():
     sb = SoundBank(args.file)
     if args.list:
         sb.list_events()
-    if args.set_event_name:
-        idx, name = int(args.set_event_name[0]), args.set_event_name[1]
-        sb.set_event_name(idx, name)
-    if args.save:
-        sb.save(args.save)
+    
     if args.wem_to_event is not None:
         wem_id = args.wem_to_event
-
         wem_to_event = {}
         for elem in sb.info_elems:
             event_name = sb.get_string(elem.name_offset)
@@ -300,8 +297,9 @@ def main():
                 print(f"  {name}")
         else:
             print(f"No event name found for {wem_id}.wem in this soundbank.")
+            
     if args.list_wems and not args.folder:
-        lines = list_wems_for_bank(sb, args.file)
+        lines, count = list_wems_for_bank(sb, args.file)
         print('\n'.join(lines))
 
 if __name__ == '__main__':
